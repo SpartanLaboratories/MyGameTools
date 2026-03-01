@@ -1,6 +1,7 @@
 import com.spartanlabs.geometry.Point
-import kotlin.math.abs
+import java.lang.Math.pow
 import kotlin.math.hypot
+import kotlin.math.sqrt
 
 abstract class Actor():VisibleObject() {
     var baseSpeed : Double      = 10.0
@@ -13,9 +14,13 @@ abstract class Actor():VisibleObject() {
             if (value < 0) throw IllegalArgumentException("base speed cannot be negative.")
             field = value
         }
+
     val speed get() = baseSpeed * speedModifier
     var destination = Point(location)
-    val isNotAtDestination get() = location != destination
+
+    val isAtDestination get() = location == destination
+    val isOneStepAway   get() = speed > sqrt(pow(location.x - destination.x,2.0) + pow(location.y - destination.y,2.0))
+
     val locmod get() =
         hypot(location.x - destination.x, location.y - destination.y).let { hypotenuse ->
             Point(
@@ -25,15 +30,12 @@ abstract class Actor():VisibleObject() {
         }
     override fun tick() {
         super.tick()
-        if (isNotAtDestination)
-            move()
+        move()
     }
     internal fun move() {
-        if (abs(location.x - destination.x) < locmod.x)
-            location.x = destination.x
-        else location.x += locmod.x
-        if (abs(location.y - destination.y) < locmod.y)
-            location.y = destination.y
-        else location.y += locmod.y
+        if (!isAtDestination)
+            if (isOneStepAway)
+                location.setTo(destination)
+            else location += locmod
     }
 }

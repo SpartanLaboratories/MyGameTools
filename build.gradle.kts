@@ -9,7 +9,7 @@ repositories {
 
 dependencies {
     testApi(kotlin("test"))
-    api("io.github.spartanlaboratories:GeneralTools:1.0.3")
+    api("io.github.spartanlaboratories:GeneralTools:1.0.4")
 }
 
 kotlin {
@@ -18,7 +18,7 @@ kotlin {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.spartanlaboratories", "GameTools", "1.0.3")
+    coordinates("io.github.spartanlaboratories", "GameTools", "1.0.4")
 
     pom {
         name.set("General Tools")
