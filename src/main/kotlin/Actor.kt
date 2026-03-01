@@ -15,6 +15,7 @@ abstract class Actor():VisibleObject() {
         }
     val speed get() = baseSpeed * speedModifier
     var destination = Point(location)
+    val isNotAtDestination get() = location != destination
     val locmod get() =
         hypot(location.x - destination.x, location.y - destination.y).let { hypotenuse ->
             Point(
@@ -24,7 +25,8 @@ abstract class Actor():VisibleObject() {
         }
     override fun tick() {
         super.tick()
-        move()
+        if (isNotAtDestination)
+            move()
     }
     internal fun move() {
         if (abs(location.x - destination.x) < locmod.x)
