@@ -13,7 +13,7 @@ abstract class Actor():VisibleObject() {
             if (value < 0) throw IllegalArgumentException("base speed cannot be negative.")
             field = value
         }
-    val speed = baseSpeed * speedModifier
+    val speed get() = baseSpeed * speedModifier
     var destination = Point(location)
     val locmod get() =
         hypot(location.x - destination.x, location.y - destination.y).let { hypotenuse ->

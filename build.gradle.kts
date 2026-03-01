@@ -18,7 +18,7 @@ kotlin {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.spartanlaboratories", "GameTools", "1.0.1")
+    coordinates("io.github.spartanlaboratories", "GameTools", "1.0.2")
 
     pom {
         name.set("General Tools")
