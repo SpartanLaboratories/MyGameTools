@@ -1,4 +1,5 @@
 import com.spartanlabs.geometry.Point
+import kotlin.math.abs
 import kotlin.math.hypot
 
 abstract class Actor():VisibleObject() {
@@ -26,6 +27,11 @@ abstract class Actor():VisibleObject() {
         move()
     }
     internal fun move() {
-        location.modBy(locmod)
+        if (abs(location.x - destination.x) < locmod.x)
+            location.x = destination.x
+        else location.x += locmod.x
+        if (abs(location.y - destination.y) < locmod.y)
+            location.y = destination.y
+        else location.y += locmod.y
     }
 }
