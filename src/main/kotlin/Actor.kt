@@ -1,9 +1,14 @@
+import com.spartanlabs.geometry.Dimensions
 import com.spartanlabs.geometry.Point
 import java.lang.Math.pow
 import kotlin.math.hypot
+import kotlin.math.pow
 import kotlin.math.sqrt
 
-abstract class Actor():VisibleObject() {
+abstract class Actor(
+    location : Point = Point(),
+    dimensions: Dimensions = Dimensions(),
+):VisibleObject(location = location, dimensions = dimensions) {
     var baseSpeed : Double      = 10.0
         set(value) {
             if (value < 0) throw IllegalArgumentException("base speed cannot be negative.")
@@ -17,9 +22,9 @@ abstract class Actor():VisibleObject() {
 
     val speed get() = baseSpeed * speedModifier
     var destination = Point(location)
-
     val isAtDestination get() = location == destination
-    val isOneStepAway   get() = speed > sqrt(pow(location.x - destination.x,2.0) + pow(location.y - destination.y,2.0))
+    val isOneStepAway : Boolean  get() = location.distanceFrom(destination)
+        .getOrThrow() < speed
 
     val locmod get() =
         hypot(location.x - destination.x, location.y - destination.y).let { hypotenuse ->

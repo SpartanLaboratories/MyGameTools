@@ -9,7 +9,8 @@ repositories {
 
 dependencies {
     testApi(kotlin("test"))
-    api("io.github.spartanlaboratories:GeneralTools:1.0.4")
+    api("io.github.spartanlaboratories:GeneralTools:1.0.5")
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 }
 
 kotlin {
@@ -18,13 +19,13 @@ kotlin {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.spartanlaboratories", "GameTools", "1.0.4")
+    coordinates("io.github.spartanlaboratories", "GameTools", "1.0.6")
 
     pom {
-        name.set("General Tools")
-        description.set("A set of generic functions.")
+        name.set("Game Tools")
+        description.set("A set of generic game tools.")
         inceptionYear.set("2026")
-        url.set("https://github.com/SpartanLaboratories/GeneralTools")
+        url.set("https://github.com/SpartanLaboratories/MyGameTools")
         licenses {
             license {
                 name.set("The Apache License, Version 2.0")
@@ -40,9 +41,9 @@ mavenPublishing {
             }
         }
         scm {
-            url.set("https://github.com/SpartanLaboratories/GeneralTools/")
-            connection.set("scm:git:git://github.com/SpartanLaboratories/GeneralTools.git")
-            developerConnection.set("scm:git:ssh://git@github.com/SpartanLaboratories/GeneralTools.git")
+            url.set("https://github.com/SpartanLaboratories/MyGameTools/")
+            connection.set("scm:git:git://github.com/SpartanLaboratories/MyGameTools.git")
+            developerConnection.set("scm:git:ssh://git@github.com/SpartanLaboratories/MyGameTools.git")
         }
     }
 }

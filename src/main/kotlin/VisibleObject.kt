@@ -6,7 +6,8 @@ abstract class VisibleObject(
     val area: Square = Square(
         dimensions  = Dimensions(width = 25.0, height = 25.0),
         location    = Point()
-)) : GameObject(area.location){
+    ),
+    var texture : String = "default.png") : GameObject(area.location){
     constructor(dimensions: Dimensions = Dimensions(width=25.0,height=25.0), location: Point = Point(x=0.0,y=0.0))
             :this(Square(dimensions=dimensions, location = location))
     constructor(width:Double = 25.0, height:Double = 25.0, location: Point = Point(x=0.0, y=0.0))
