@@ -1,5 +1,6 @@
 plugins {
     `kotlin-dsl`
+    kotlin("plugin.serialization") version "1.9.24"
     id("com.vanniktech.maven.publish") version "0.36.0"
 }
 
@@ -8,18 +9,25 @@ repositories {
 }
 
 dependencies {
-    testApi(kotlin("test"))
+    // Spartan Laboratories Tools
+    api("io.github.spartanlaboratories:WebTools:1.0.1")
     api("io.github.spartanlaboratories:GeneralTools:1.0.5")
+
+    // Serialization
     api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+
+    // Test
+    testApi(kotlin("test"))
 }
 
-kotlin {
-    jvmToolchain(23)
+tasks.test {
+    useJUnitPlatform()
 }
+
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.spartanlaboratories", "GameTools", "1.0.6")
+    coordinates("io.github.spartanlaboratories", "GameTools", "1.0.7")
 
     pom {
         name.set("Game Tools")
@@ -46,7 +54,4 @@ mavenPublishing {
             developerConnection.set("scm:git:ssh://git@github.com/SpartanLaboratories/MyGameTools.git")
         }
     }
-}
-tasks.test {
-    useJUnitPlatform()
 }

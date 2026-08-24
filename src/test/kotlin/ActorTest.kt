@@ -1,3 +1,4 @@
+import com.spartanlabs.gaming.gameobjects.Actor
 import com.spartanlabs.geometry.Point
 import java.lang.Double.NaN
 import kotlin.test.Test

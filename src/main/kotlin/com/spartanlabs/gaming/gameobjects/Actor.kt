@@ -1,9 +1,10 @@
+package com.spartanlabs.gaming.gameobjects
+// Organizational
+// Spartan Laboratories
 import com.spartanlabs.geometry.Dimensions
 import com.spartanlabs.geometry.Point
-import java.lang.Math.pow
+// Standard Library
 import kotlin.math.hypot
-import kotlin.math.pow
-import kotlin.math.sqrt
 
 abstract class Actor(
     location : Point = Point(),
