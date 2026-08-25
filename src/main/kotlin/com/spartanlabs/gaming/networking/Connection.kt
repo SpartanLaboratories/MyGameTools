@@ -3,7 +3,7 @@ package com.spartanlabs.gaming.networking
 import com.spartanlabs.webtools.UDPSendReceiveServer
 import java.net.InetAddress
 
-internal class Connection(val name:String, address: InetAddress, sendPort: Int, receivePort: Int) {
+internal class Connection(val name:String, val address: InetAddress, val sendPort: Int, val receivePort: Int) {
     private val server = UDPSendReceiveServer(address, sendPort, receivePort)
     fun actuate(onMessage: (message: String) -> Unit) {
         server.startListening { message, senderAddress ->
