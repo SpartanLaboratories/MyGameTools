@@ -1,6 +1,10 @@
 plugins {
-    `kotlin-dsl`
-    kotlin("plugin.serialization") version "1.9.24"
+    // This is a plain Kotlin library, not a Gradle plugin. `kotlin-dsl` would drag in
+    // gradleApi(), whose bundled slf4j provider outranks logback and silently discards
+    // every INFO/DEBUG record the library logs.
+    `java-library`
+    kotlin("jvm") version "2.2.0"
+    kotlin("plugin.serialization") version "2.2.0"
     id("com.vanniktech.maven.publish") version "0.36.0"
 }
 
@@ -15,8 +19,16 @@ dependencies {
     // Serialization
     api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
+    // Logging - the library only ever binds to the slf4j facade, so that consumers
+    // remain free to pick their own implementation.
+    api("org.slf4j:slf4j-api:2.0.16")
+
     // Test
-    testApi(kotlin("test"))
+    testImplementation(kotlin("test"))
+
+    // Tests supply the logback implementation the facade binds to, so that the
+    // library's structured logging is actually exercised and visible.
+    testImplementation("ch.qos.logback:logback-classic:1.5.18")
 }
 
 tasks.test {
@@ -26,7 +38,7 @@ tasks.test {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.spartanlaboratories", "GameTools", "1.0.7")
+    coordinates("io.github.spartanlaboratories", "GameTools", "1.1.0")
 
     pom {
         name.set("Game Tools")
