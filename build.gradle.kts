@@ -10,8 +10,7 @@ repositories {
 
 dependencies {
     // Spartan Laboratories Tools
-    api("io.github.spartanlaboratories:WebTools:1.0.1")
-    api("io.github.spartanlaboratories:GeneralTools:1.0.5")
+    api("io.github.spartanlaboratories:WebTools:2.0.0")
 
     // Serialization
     api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
