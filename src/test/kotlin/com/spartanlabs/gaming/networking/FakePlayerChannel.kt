@@ -1,8 +1,10 @@
 package com.spartanlabs.gaming.networking
 
+//region 2. Intended Function
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
+//endregion
 
 /**
  * The client end of a single player's dedicated connection, once the handshake has handed

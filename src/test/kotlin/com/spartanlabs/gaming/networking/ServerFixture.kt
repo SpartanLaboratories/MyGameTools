@@ -1,7 +1,9 @@
 package com.spartanlabs.gaming.networking
 
+//region 2. Intended Function
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+//endregion
 
 /**
  * Owns the [GameServer] under test together with every socket the fake clients opened
@@ -25,16 +27,22 @@ internal class ServerFixture : AutoCloseable {
     /** Every `(player, message)` pair the server reported, in arrival order. */
     private val playerMessages = LinkedBlockingQueue<Pair<String, String>>()
 
+    /** Every `(player, MouseAction)` pair the server decoded from an `INPUT` message. */
+    private val playerInputs = LinkedBlockingQueue<Pair<String, MouseAction>>()
+
     /**
      * Starts the server under test, recording everything its players say so that tests can
-     * await it with [awaitPlayerMessage].
+     * await it with [awaitPlayerMessage] or [awaitPlayerInput].
      *
      * @param maxConnections the cap to give the server
      * @return the started server
      */
     fun startServer(maxConnections: Int): GameServer =
-        GameServer(maxConnections) { name, message -> playerMessages.put(name to message) }
-            .also { started -> server = started }
+        GameServer(
+            maxConnections,
+            onPlayerMessage = { name, message -> playerMessages.put(name to message) },
+            onPlayerInput = { name, input -> playerInputs.put(name to input) }
+        ).also { started -> server = started }
 
     /** @return a fake client harness that will be closed with this fixture */
     fun client(): FakeClientHarness = FakeClientHarness().also { harness -> harnesses.add(harness) }
@@ -77,6 +85,14 @@ internal class ServerFixture : AutoCloseable {
      */
     fun awaitPlayerMessage(timeoutMillis: Long = MESSAGE_TIMEOUT_MILLIS): Pair<String, String>? =
         playerMessages.poll(timeoutMillis, TimeUnit.MILLISECONDS)
+
+    /**
+     * Takes the next [MouseAction] the server decoded from a player's `INPUT` message.
+     * @param timeoutMillis how long to wait for one to arrive
+     * @return the `(player, MouseAction)` pair, or `null` if none arrived in time
+     */
+    fun awaitPlayerInput(timeoutMillis: Long = MESSAGE_TIMEOUT_MILLIS): Pair<String, MouseAction>? =
+        playerInputs.poll(timeoutMillis, TimeUnit.MILLISECONDS)
 
     /** Closes every channel and harness, then shuts the server down and frees the common ports. */
     override fun close() {

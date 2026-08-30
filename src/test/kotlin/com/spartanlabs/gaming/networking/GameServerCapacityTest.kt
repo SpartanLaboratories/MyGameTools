@@ -1,9 +1,12 @@
 package com.spartanlabs.gaming.networking
 
+//region 4. Programming Infrastructure and Support
+// 4.3 Testing
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+//endregion
 
 /**
  * Covers the `maxConnections` cap.

@@ -1,6 +1,9 @@
 package com.spartanlabs.gaming.networking
 
+//region 1. Organization Internal
+// 1.2 Spartan Gaming
 import com.spartanlabs.gaming.gameobjects.VisibleObject
+//endregion
 
 /**
  * The smallest possible concrete [VisibleObject], so that broadcast tests have something
@@ -17,6 +20,5 @@ internal class TestVisibleObject(
     width: Double = 10.0,
     height: Double = 20.0
 ) : VisibleObject(width = width, height = height, x = x, y = y) {
-    override fun draw() = Unit
     override fun onUpdate() = Unit
 }

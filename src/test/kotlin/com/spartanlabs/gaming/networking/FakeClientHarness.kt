@@ -1,10 +1,20 @@
 package com.spartanlabs.gaming.networking
 
+//region 1. Organization Internal
+// 1.1 Spartan Laboratories
 import com.spartanlabs.webtools.MultiConnectionUDPServer
-import org.slf4j.LoggerFactory
+//endregion
+
+//region 2. Intended Function
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
+//endregion
+
+//region 4. Programming Infrastructure and Support
+// 4.1 Logging
+import org.slf4j.LoggerFactory
+//endregion
 
 /**
  * Drives the client half of the [GameServer] handshake protocol over real sockets.

@@ -14,7 +14,12 @@ repositories {
 
 dependencies {
     // Spartan Laboratories Tools
-    api("io.github.spartanlaboratories:WebTools:2.0.0")
+    // Drop WebTools' bundled GeneralTools so the explicit 2.0.1 below is the only one on the path.
+    api("io.github.spartanlaboratories:WebTools:2.0.0") {
+        exclude(group = "io.github.spartanlaboratories", module = "GeneralTools")
+    }
+    // Even though its included in webtools, the newest version (2.0.1) is needed for the Color class
+    api("io.github.spartanlaboratories:GeneralTools:2.0.1")
 
     // Serialization
     api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
@@ -38,7 +43,7 @@ tasks.test {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.spartanlaboratories", "GameTools", "1.1.0")
+    coordinates("io.github.spartanlaboratories", "GameTools", "1.2.0")
 
     pom {
         name.set("Game Tools")

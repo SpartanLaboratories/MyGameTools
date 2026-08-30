@@ -1,22 +1,26 @@
 package com.spartanlabs.gaming.networking
 
-// Organizational
-// Spartan Gaming
-import com.spartanlabs.gaming.gameobjects.VisibleObject
-import com.spartanlabs.gaming.gameobjects.VisibleObjectSnapshot
-
-// Spartan Laboratories
+//region 1. Organization Internal
+// 1.1 Spartan Laboratories
 import com.spartanlabs.webtools.MultiConnectionUDPServer
 import com.spartanlabs.webtools.UDPConnection
+// 1.2 Spartan Gaming
+import com.spartanlabs.gaming.gameobjects.VisibleObject
+import com.spartanlabs.gaming.gameobjects.VisibleObjectSnapshot
+//endregion
 
-// Intended Function
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
+//region 2. Intended Function
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+//endregion
 
-// Programming Generics (Tests, Logging, Profiling)
-import org.slf4j.LoggerFactory
+//region 4. Programming Infrastructure and Support
+// 4.1 Logging
 import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+//endregion
 
 /** Shared slf4j logger for the game networking layer. */
 private val log: Logger = LoggerFactory.getLogger("GameServer")
@@ -31,8 +35,10 @@ private val log: Logger = LoggerFactory.getLogger("GameServer")
  * contract:
  *
  * - it accepts at most [maxConnections] players and refuses the rest,
- * - it starts listening on every accepted player's dedicated connection and forwards
- *   their messages to [onPlayerMessage], tagged with the player they came from,
+ * - it starts listening on every accepted player's dedicated connection and routes their
+ *   messages by verb: an `INPUT <json>` datagram is decoded into a [MouseAction] and handed
+ *   to [onPlayerInput], and everything else is passed verbatim to [onPlayerMessage], each
+ *   tagged with the player it came from,
  * - it serializes world state to JSON and broadcasts it with [broadcast].
  *
  * Construction starts the server: the base class spawns its handshake thread from its own
@@ -42,12 +48,17 @@ private val log: Logger = LoggerFactory.getLogger("GameServer")
  *
  * @property maxConnections the largest number of players allowed on the server at once
  * @param onPlayerMessage invoked with the sending player's name and the raw message text for
- * every datagram received from any player. Called on that player's listener thread, so it
- * should return quickly and must be safe to call concurrently for different players.
+ * every datagram that is not a recognised `INPUT` message. Called on that player's listener
+ * thread, so it should return quickly and must be safe to call concurrently for different
+ * players.
+ * @param onPlayerInput invoked with the sending player's name and the decoded [MouseAction]
+ * for every well-formed `INPUT <json>` datagram. A malformed `INPUT` payload is logged and
+ * dropped rather than reaching either callback. Shares [onPlayerMessage]'s threading contract.
  */
 class GameServer(
     val maxConnections: Int,
-    private val onPlayerMessage: (playerName: String, message: String) -> Unit = { _, _ -> }
+    private val onPlayerMessage: (playerName: String, message: String) -> Unit = { _, _ -> },
+    private val onPlayerInput: (playerName: String, input: MouseAction) -> Unit = { _, _ -> }
 ) : MultiConnectionUDPServer() {
 
     /**
@@ -122,8 +133,42 @@ class GameServer(
             stale.terminate()
         }
         log.info("'{}' joined ({}/{})", connection.name, players.size, maxConnections)
-        return connection.actuate { message -> onPlayerMessage(connection.name, message) }
+        return connection.actuate { message -> dispatch(connection.name, message) }
     }
+
+    /**
+     * Routes one datagram from [playerName] to the right callback.
+     *
+     * A message whose first token is [INPUT_VERB] has its remainder decoded as a [MouseAction]
+     * and handed to [onPlayerInput]; a payload that will not parse is logged and dropped.
+     * Every other message is passed verbatim (trimmed) to [onPlayerMessage].
+     *
+     * @param playerName the name the datagram's sender handshook with
+     * @param message the raw datagram text
+     */
+    private fun dispatch(playerName: String, message: String) {
+        val trimmed = message.trim()
+        val (verb, payload) = trimmed.split(" ", limit = 2).let { parts ->
+            parts[0] to parts.getOrElse(1) { "" }
+        }
+        when (verb) {
+            INPUT_VERB -> decodeInput(payload)
+                .onSuccess { input -> onPlayerInput(playerName, input) }
+                .onFailure { cause ->
+                    log.warn("Ignoring malformed {} from '{}': {}", INPUT_VERB, playerName, cause.message)
+                }
+
+            else -> onPlayerMessage(playerName, trimmed)
+        }
+    }
+
+    /**
+     * Decodes the JSON body of an `INPUT` message into a [MouseAction].
+     * @param json the text after the [INPUT_VERB] token
+     * @return the decoded action, or [Result.failure] if [json] is not a valid [MouseAction]
+     */
+    private fun decodeInput(json: String): Result<MouseAction> =
+        runCatching { Json.decodeFromString<MouseAction>(json) }
 
     /**
      * Whether this instance's own fields have been assigned yet.
@@ -215,6 +260,12 @@ class GameServer(
     companion object {
         /** The verb that opens a world-state broadcast sent by [broadcast]. */
         const val STATE_VERB = "STATE"
+
+        /** The verb that opens a client input message carrying a serialized [MouseAction]. */
+        const val INPUT_VERB = "INPUT"
+
+        /** Builds the `INPUT <json>` datagram a client sends to deliver [input] to the server. */
+        fun inputMessage(input: MouseAction): String = "$INPUT_VERB ${Json.encodeToString(input)}"
     }
 }
 

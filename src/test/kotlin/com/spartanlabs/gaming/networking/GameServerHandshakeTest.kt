@@ -1,10 +1,13 @@
 package com.spartanlabs.gaming.networking
 
+//region 4. Programming Infrastructure and Support
+// 4.3 Testing
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
+//endregion
 
 /** Covers how [GameServer] turns a completed `Iam` handshake into a tracked player. */
 class GameServerHandshakeTest {
