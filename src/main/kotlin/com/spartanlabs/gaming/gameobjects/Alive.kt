@@ -11,8 +11,8 @@ import com.spartanlabs.geometry.Square
 /**
  * An [Actor] with [health] that can be depleted.
  *
- * It carries a red [healthBar] sub-object whose width tracks [health] as a fraction of its
- * maximum, refreshed every [tick].
+ * It carries a red [healthBar] sub-object that follows the actor and whose width tracks
+ * [health] as a fraction of its maximum, both refreshed every [tick].
  *
  * @param location where the actor starts
  * @param dimensions the actor's size
@@ -33,12 +33,15 @@ class Alive(
     /** [healthBar]'s width at full health, captured before any tick scales it down. */
     private val fullHealthBarWidth = dimensions.width
 
+    /** [healthBar]'s vertical offset from the actor's origin, fixed at the actor's starting size. */
+    private val healthBarYOffset = -dimensions.height * HEALTH_BAR_HEIGHT_FRACTION
+
     /**
-     * A red bar drawn a fraction of the actor's height off its origin.
+     * A red bar drawn a fraction of the actor's height above its origin.
      *
      * Built from fresh [Dimensions]/[Point] rather than the constructor arguments, so that
      * sizing and positioning it never mutates the actor's own geometry (which shares those
-     * objects).
+     * objects). Its position is refreshed every [tick] to follow the actor.
      */
     val healthBar = VisibleObject(
         area = Square(
@@ -46,10 +49,7 @@ class Alive(
                 width = fullHealthBarWidth,
                 height = dimensions.height * HEALTH_BAR_HEIGHT_FRACTION
             ),
-            location = Point(
-                x = location.x,
-                y = location.y - dimensions.height * HEALTH_BAR_HEIGHT_FRACTION
-            )
+            location = Point(x = location.x, y = location.y + healthBarYOffset)
         ),
         color = Color(255, 0, 0)
     )
@@ -59,14 +59,15 @@ class Alive(
         log.debug("Spawned an Alive at {} with {} health", location, maxHealth)
     }
 
-    /** Advances the actor, then resizes [healthBar] to the current [health] fraction. */
+    /** Advances the actor, then moves [healthBar] onto it and resizes it to the current [health] fraction. */
     override fun tick() {
         super.tick()
+        healthBar.location.setTo(location.x, location.y + healthBarYOffset)
         healthBar.dimensions.width = fullHealthBarWidth * health.fractionOfMax.coerceIn(0.0, 1.0)
     }
 
     companion object {
-        /** [healthBar]'s height, and its offset off the actor's origin, as a fraction of actor height. */
+        /** [healthBar]'s height, and its vertical offset from the actor's origin, as a fraction of actor height. */
         private const val HEALTH_BAR_HEIGHT_FRACTION = 0.2
     }
 }

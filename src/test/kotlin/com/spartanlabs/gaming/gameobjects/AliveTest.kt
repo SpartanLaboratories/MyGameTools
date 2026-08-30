@@ -65,6 +65,18 @@ class AliveTest {
     }
 
     @Test
+    fun `the health bar follows the actor as it moves`() {
+        val actor = alive() // at (0,0), height 10 -> bar offset -2.0
+        actor.destination = Point(100.0, 0.0)
+
+        actor.tick() // one step of length speed (10)
+
+        assertEquals(actor.location.x, actor.healthBar.location.x)
+        assertEquals(actor.location.y - 10.0 * 0.2, actor.healthBar.location.y)
+        assertEquals(10.0, actor.healthBar.location.x)
+    }
+
+    @Test
     fun `the health bar is registered as a sub-object`() {
         val actor = alive()
 

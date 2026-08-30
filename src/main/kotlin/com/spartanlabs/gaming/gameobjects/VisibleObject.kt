@@ -22,7 +22,7 @@ import kotlinx.serialization.Serializable
  * in place of a fully built [Square].
  *
  * @param area the object's position and size as one [Square]
- * @param color the tint applied when drawing, opaque black by default
+ * @param color the tint applied when drawing, opaque white by default
  * @param texture the name of the texture to draw, `"default.png"` by default
  */
 open class VisibleObject(
@@ -30,7 +30,7 @@ open class VisibleObject(
         dimensions  = Dimensions(width = 25.0, height = 25.0),
         location    = Point()
     ),
-    var color: Color = Color(0, 0, 0),
+    var color: Color = Color(255, 255, 255, 255),
     var texture: String = "default.png") : GameObject(area.location) {
 
     /** Creates a visible object of [dimensions] at [location]. */
@@ -68,6 +68,12 @@ open class VisibleObject(
             if (value != field) log.warn("Angle {} normalised to {} degrees.", value, field)
         }
 
+    /**
+     * Whether this object rotates to face a direction, i.e. whether its [angle] is meaningful
+     * to a renderer. `false` by default: a plain object is drawn upright regardless of [angle].
+     */
+    var turns: Boolean = false
+
     /** Objects drawn relative to this one, e.g. a health bar. Drawn in insertion order. */
     val subObjects: MutableList<VisibleObject> = mutableListOf()
 
@@ -101,6 +107,7 @@ data class ColorSnapshot(val r: Int, val g: Int, val b: Int, val a: Int) {
  * @property color the object's tint at snapshot time
  * @property texture the object's texture name at snapshot time
  * @property angle the object's facing in degrees at snapshot time
+ * @property turns whether [angle] is meaningful for this object at snapshot time
  * @property subObjects snapshots of the object's [VisibleObject.subObjects], in order
  */
 @Serializable
@@ -110,6 +117,7 @@ data class VisibleObjectSnapshot(
     val color: ColorSnapshot,
     val texture: String,
     val angle: Int,
+    val turns: Boolean,
     val subObjects: List<VisibleObjectSnapshot>) {
     companion object {
         /** Takes a snapshot of [visibleObject] and, recursively, its sub-objects. */
@@ -119,6 +127,7 @@ data class VisibleObjectSnapshot(
             ColorSnapshot.from(visibleObject.color),
             visibleObject.texture,
             angle = visibleObject.angle,
+            turns = visibleObject.turns,
             subObjects = visibleObject.subObjects.map(::from)
         )
     }
