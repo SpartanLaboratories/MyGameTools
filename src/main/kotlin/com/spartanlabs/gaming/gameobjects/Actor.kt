@@ -3,8 +3,14 @@ package com.spartanlabs.gaming.gameobjects
 // 1.1 Spartan Laboratories
 import com.spartanlabs.geometry.Dimensions
 import com.spartanlabs.geometry.Point
+import com.spartanlabs.geometry.serializations.PointSnapshot
 // 1.2 Spartan Gaming
 import com.spartanlabs.gaming.spatial.Quadtree
+//endregion
+
+//region 2. Intended Function
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 //endregion
 
 //region 3. Utility / Catch-all
@@ -188,4 +194,33 @@ open class Actor(
             location.x - range, location.y - range,
             location.x + range, location.y + range
         )
+}
+
+/**
+ * An immutable, serializable copy of an [Actor]'s state, layered on its [VisibleObjectSnapshot]:
+ * how fast it moves and where it is headed. Sent in place of a plain [VisibleObjectSnapshot]
+ * whenever a broadcast object is an [Actor] (see [DrawableSnapshot]).
+ *
+ * @property visibleObject the underlying [VisibleObjectSnapshot] - position, size, drawable state, sub-objects
+ * @property speed the actor's effective movement rate in units per tick at snapshot time
+ * @property destination the point the actor was moving towards at snapshot time
+ */
+@Serializable
+@SerialName("actor")
+data class ActorSnapshot(
+    val visibleObject: VisibleObjectSnapshot,
+    val speed: Double,
+    val destination: PointSnapshot) : DrawableSnapshot {
+
+    /** The actor's sub-object snapshots - the same list as [visibleObject]'s. */
+    override val subObjects: List<DrawableSnapshot> get() = visibleObject.subObjects
+
+    companion object {
+        /** Takes a snapshot of [actor]'s movement state along with its drawable state and sub-objects. */
+        infix fun from(actor: Actor): ActorSnapshot = ActorSnapshot(
+            VisibleObjectSnapshot.from(actor),
+            speed = actor.speed,
+            destination = PointSnapshot.from(actor.destination)
+        )
+    }
 }

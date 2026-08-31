@@ -67,13 +67,13 @@ class AliveTest {
 
     @Test
     fun `the health bar follows the actor as it moves`() {
-        val actor = alive() // at (0,0), height 10 -> bar offset 10 * (0.5 + 0.2/2) = +6.0 (y-up)
+        val actor = alive() // at (0,0), height 10 -> bar sits 10 * (0.5 + 0.2/2) = 6.0 above the actor (-y)
         actor.destination = Point(100.0, 0.0)
 
         actor.tick() // one step of length speed (10)
 
         assertEquals(actor.location.x, actor.healthBar.location.x)
-        assertEquals(actor.location.y + 10.0 * (0.5 + 0.2 / 2), actor.healthBar.location.y)
+        assertEquals(actor.location.y - 10.0 * (0.5 + 0.2 / 2), actor.healthBar.location.y)
         assertEquals(10.0, actor.healthBar.location.x)
     }
 

@@ -131,4 +131,19 @@ class WorldTest {
         world.tick()
         assertEquals(1, spawned.ticks)
     }
+
+    @Test
+    fun `objects queued in removeList are ticked this pass then dropped`() {
+        val world = World()
+        val keep = TickCounter()
+        val drop = TickCounter()
+        world.gameObjects += listOf(keep, drop)
+        world.removeList += drop
+
+        world.tick()
+
+        assertEquals(listOf<GameObject>(keep), world.gameObjects)
+        assertTrue(world.removeList.isEmpty())
+        assertEquals(1, drop.ticks) // still ticked before removal
+    }
 }

@@ -5,8 +5,8 @@ package com.spartanlabs.gaming.networking
 import com.spartanlabs.webtools.MultiConnectionUDPServer
 import com.spartanlabs.webtools.UDPConnection
 // 1.2 Spartan Gaming
+import com.spartanlabs.gaming.gameobjects.DrawableSnapshot
 import com.spartanlabs.gaming.gameobjects.VisibleObject
-import com.spartanlabs.gaming.gameobjects.VisibleObjectSnapshot
 //endregion
 
 //region 2. Intended Function
@@ -182,7 +182,10 @@ class GameServer(
     private val isFullyConstructed: Boolean get() = players != null
 
     /**
-     * Snapshots and broadcasts the given world state to every connected player.
+     * Snapshots and broadcasts the given world state to every connected player. Each object is
+     * snapshotted as the most specific kind that fits it - [com.spartanlabs.gaming.gameobjects.AliveSnapshot],
+     * [com.spartanlabs.gaming.gameobjects.ActorSnapshot], or plain
+     * [com.spartanlabs.gaming.gameobjects.VisibleObjectSnapshot].
      *
      * Objects whose [VisibleObject.visible] flag is `false` are skipped, so hidden objects
      * are never sent to clients.
@@ -191,15 +194,20 @@ class GameServer(
      * @return [Result.success] if the state reached every player, or the first failure encountered
      */
     fun broadcast(visibleObjects: Iterable<VisibleObject>): Result<Unit> =
-        broadcast(visibleObjects.filter { it.visible }.map { visibleObject -> VisibleObjectSnapshot from visibleObject })
+        broadcast(visibleObjects.filter { it.visible }.map { visibleObject -> DrawableSnapshot from visibleObject })
 
     /**
-     * Broadcasts already-taken snapshots to every connected player as a
-     * `STATE <json>` message.
+     * Broadcasts already-taken snapshots to every connected player as a `STATE <json>` message.
+     *
+     * The list serializes polymorphically: each entry carries a `type` field, so an
+     * [com.spartanlabs.gaming.gameobjects.AliveSnapshot] or
+     * [com.spartanlabs.gaming.gameobjects.ActorSnapshot] is distinguishable from a plain
+     * [com.spartanlabs.gaming.gameobjects.VisibleObjectSnapshot] on the wire.
+     *
      * @param snapshots the world state to serialize and send
      * @return [Result.success] if the state reached every player, or the first failure encountered
      */
-    fun broadcast(snapshots: List<VisibleObjectSnapshot>): Result<Unit> =
+    fun broadcast(snapshots: List<DrawableSnapshot>): Result<Unit> =
         runCatching { Json.encodeToString(snapshots) }
             .onFailure { cause -> log.error("Could not serialize {} snapshot(s)", snapshots.size, cause) }
             .andThen { json -> pushToAllPlayers("$STATE_VERB $json") }

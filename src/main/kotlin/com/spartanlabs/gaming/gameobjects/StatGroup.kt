@@ -1,5 +1,9 @@
 package com.spartanlabs.gaming.gameobjects
 
+//region 2. Intended Function
+import kotlinx.serialization.Serializable
+//endregion
+
 /**
  * A single numeric stat - health, mana, stamina - tracked as a current [value] against a
  * normal ceiling [maxValue] and a hard ceiling [cap].
@@ -52,4 +56,20 @@ data class StatGroup(
 
     /** The product of every entry in [multiplicativeMods]; `1.0` when there are none. */
     val totalMultiplicativeMod get() = multiplicativeMods.values.fold(1.0) { acc, mod -> acc * mod }
+}
+
+/**
+ * An immutable, serializable copy of a [StatGroup]'s three tracked numbers.
+ *
+ * @property value the current amount at snapshot time
+ * @property maxValue the normal ceiling at snapshot time
+ * @property cap the hard ceiling at snapshot time
+ */
+@Serializable
+data class StatGroupSnapshot(val value: Double, val maxValue: Double, val cap: Double) {
+    companion object {
+        /** Takes a snapshot of [statGroup]'s current numbers. */
+        infix fun from(statGroup: StatGroup): StatGroupSnapshot =
+            StatGroupSnapshot(statGroup.value, statGroup.maxValue, statGroup.cap)
+    }
 }

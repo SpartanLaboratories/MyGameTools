@@ -20,6 +20,13 @@ class World {
     val gameObjects: ArrayList<GameObject> = ArrayList()
 
     /**
+     * Objects to drop from [gameObjects] at the end of the current [tick]. An object adds
+     * itself here during its own tick - a dying [Alive] with [Alive.DeathResponse.REMOVAL]
+     * does - and [tick] removes them once the pass is done, so removal never disturbs iteration.
+     */
+    val removeList: ArrayList<GameObject> = ArrayList()
+
+    /**
      * Spatial index of the [VisibleObject]s in [gameObjects], keyed by world position and
      * rebuilt from scratch at the start of every [tick]. Between ticks it reflects the
      * positions the objects held when the last tick began.
@@ -27,18 +34,36 @@ class World {
     val quadtree: Quadtree<Double, VisibleObject> = Quadtree()
 
     /**
-     * Advances the world by one frame: rebuilds [quadtree] from [gameObjects], then
-     * [GameObject.tick]s every owned object.
+     * Adds [gameObject] to [gameObjects]; for an [Alive] it also sets [Alive.world] so a
+     * [Alive.DeathResponse.REMOVAL] death can reach [removeList]. Adding straight to
+     * [gameObjects] still works, but then an [Alive] needs its [Alive.world] set by hand.
      *
-     * Objects are ticked over a snapshot of [gameObjects], so an object may add to or remove
-     * from the world during its own tick without disturbing the current pass; such changes
-     * take effect on the next [tick].
+     * @param gameObject the object to bring into the world
+     */
+    fun add(gameObject: GameObject) {
+        gameObjects.add(gameObject)
+        if (gameObject is Alive) gameObject.world = this
+    }
+
+    /**
+     * Advances the world by one frame: rebuilds [quadtree] from [gameObjects], [GameObject.tick]s
+     * every owned object, then drops everything queued in [removeList].
+     *
+     * Objects are ticked over a snapshot of [gameObjects], so an object may add to [gameObjects]
+     * or [removeList] during its own tick without disturbing the current pass.
      */
     fun tick() {
         rebuildQuadtree()
+
         val ticking = gameObjects.toList()
         log.debug("World tick: advancing {} game object(s)", ticking.size)
         ticking.forEach(GameObject::tick)
+
+        if (removeList.isNotEmpty()) {
+            log.debug("World removing {} game object(s)", removeList.size)
+            gameObjects.removeAll(removeList.toSet())
+            removeList.clear()
+        }
     }
 
     /** Clears [quadtree] and re-inserts every [VisibleObject] in [gameObjects] at its current position. */

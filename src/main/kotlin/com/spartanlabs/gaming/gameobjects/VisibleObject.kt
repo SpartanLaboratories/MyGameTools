@@ -9,6 +9,7 @@ import com.spartanlabs.geometry.serializations.DimensionsSnapshot
 //endregion
 
 //region 2. Intended Function
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 //endregion
 
@@ -133,6 +134,31 @@ data class ColorSnapshot(val r: Int, val g: Int, val b: Int, val a: Int) {
 }
 
 /**
+ * The shared supertype of the per-object entries in a world-state broadcast. The most specific
+ * kind is picked for each object: [AliveSnapshot] for an [Alive], else [ActorSnapshot] for an
+ * [Actor], else a plain [VisibleObjectSnapshot].
+ *
+ * It serializes polymorphically - every entry carries a `type` field naming which kind it is
+ * - so [com.spartanlabs.gaming.networking.GameServer.broadcast] can send one mixed list and
+ * each object is decoded back as the right type.
+ */
+@Serializable
+sealed interface DrawableSnapshot {
+
+    /** Snapshots of this object's visible [VisibleObject.subObjects], in order. */
+    val subObjects: List<DrawableSnapshot>
+
+    companion object {
+        /** Snapshots [visibleObject] as the most specific kind that fits it. */
+        infix fun from(visibleObject: VisibleObject): DrawableSnapshot = when (visibleObject) {
+            is Alive -> AliveSnapshot.from(visibleObject)
+            is Actor -> ActorSnapshot.from(visibleObject)
+            else -> VisibleObjectSnapshot.from(visibleObject)
+        }
+    }
+}
+
+/**
  * An immutable, serializable copy of a [VisibleObject]'s drawable state, including its
  * [subObjects] snapshotted recursively.
  *
@@ -142,9 +168,11 @@ data class ColorSnapshot(val r: Int, val g: Int, val b: Int, val a: Int) {
  * @property texture the object's texture name at snapshot time
  * @property angle the object's facing in degrees at snapshot time
  * @property turns whether [angle] is meaningful for this object at snapshot time
- * @property subObjects snapshots of the object's visible [VisibleObject.subObjects], in order
+ * @property subObjects snapshots of the object's visible [VisibleObject.subObjects], in order,
+ *   each as its own kind ([ActorSnapshot] or plain [VisibleObjectSnapshot])
  */
 @Serializable
+@SerialName("visibleObject")
 data class VisibleObjectSnapshot(
     val gameObject: GameObjectSnapshot,
     val dimensions: DimensionsSnapshot,
@@ -152,7 +180,7 @@ data class VisibleObjectSnapshot(
     val texture: String,
     val angle: Int,
     val turns: Boolean,
-    val subObjects: List<VisibleObjectSnapshot>) {
+    override val subObjects: List<DrawableSnapshot>) : DrawableSnapshot {
     companion object {
         /** Takes a snapshot of [visibleObject] and, recursively, its visible sub-objects. */
         infix fun from(visibleObject: VisibleObject): VisibleObjectSnapshot = VisibleObjectSnapshot(
@@ -162,7 +190,7 @@ data class VisibleObjectSnapshot(
             visibleObject.texture,
             angle = visibleObject.angle,
             turns = visibleObject.turns,
-            subObjects = visibleObject.subObjects.filter { it.visible }.map(::from)
+            subObjects = visibleObject.subObjects.filter { it.visible }.map { DrawableSnapshot from it }
         )
     }
 }
