@@ -183,11 +183,15 @@ class GameServer(
 
     /**
      * Snapshots and broadcasts the given world state to every connected player.
+     *
+     * Objects whose [VisibleObject.visible] flag is `false` are skipped, so hidden objects
+     * are never sent to clients.
+     *
      * @param visibleObjects the objects the players should be told about
      * @return [Result.success] if the state reached every player, or the first failure encountered
      */
     fun broadcast(visibleObjects: Iterable<VisibleObject>): Result<Unit> =
-        broadcast(visibleObjects.map { visibleObject -> VisibleObjectSnapshot from visibleObject })
+        broadcast(visibleObjects.filter { it.visible }.map { visibleObject -> VisibleObjectSnapshot from visibleObject })
 
     /**
      * Broadcasts already-taken snapshots to every connected player as a

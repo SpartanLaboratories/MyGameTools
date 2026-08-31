@@ -27,6 +27,9 @@ class Alive(
     /** The actor's health, from `maxHealth` down to (and past) zero. */
     var health: StatGroup = StatGroup(value = maxHealth, maxValue = maxHealth, cap = maxHealth)
 
+    /** How much health this actor removes from a target when it attacks; defaults to `10.0`. */
+    var damage: Double = 10.0
+
     /** `true` while [health] is above zero. */
     val isAlive get() = health.value > 0.0
 
@@ -34,7 +37,7 @@ class Alive(
     private val fullHealthBarWidth = dimensions.width
 
     /** [healthBar]'s vertical offset from the actor's origin, fixed at the actor's starting size. */
-    private val healthBarYOffset = -dimensions.height * HEALTH_BAR_HEIGHT_FRACTION
+    private val healthBarYOffset = dimensions.height * HEALTH_BAR_HEIGHT_FRACTION
 
     /**
      * A red bar drawn a fraction of the actor's height above its origin.
@@ -60,8 +63,8 @@ class Alive(
     }
 
     /** Advances the actor, then moves [healthBar] onto it and resizes it to the current [health] fraction. */
-    override fun tick() {
-        super.tick()
+    override fun onUpdate() {
+        super.onUpdate()
         healthBar.location.setTo(location.x, location.y + healthBarYOffset)
         healthBar.dimensions.width = fullHealthBarWidth * health.fractionOfMax.coerceIn(0.0, 1.0)
     }

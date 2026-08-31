@@ -3,22 +3,27 @@ package com.spartanlabs.gaming.gameobjects
 // 1.1 Spartan Laboratories
 import com.spartanlabs.geometry.Dimensions
 import com.spartanlabs.geometry.Point
+// 1.2 Spartan Gaming
+import com.spartanlabs.gaming.spatial.Quadtree
 //endregion
 
 //region 3. Utility / Catch-all
 // 3.2 Kotlin
 // 3.2.1 Standard library
 import kotlin.math.atan2
+import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.roundToInt
+import kotlin.math.sin
 //endregion
 
 /**
- * A [VisibleObject] that can move towards a [destination] under its own power.
+ * A [VisibleObject] that moves under its own power.
  *
- * Movement is driven by [tick]: every tick the actor steps [speed] units along the
- * straight line towards [destination], snapping exactly onto it once it is within a
- * single step. Setting [destination] also re-aims [angle] at the new target.
+ * What it does each [tick] is decided by its [movement] strategy ([Movement.Targeting] by
+ * default): head for a [destination] and stop, pursue one persistently, travel along a fixed
+ * [angle], or home in on another [GameObject]. Whichever is chosen, the actor advances at
+ * most [speed] units per tick. Assigning [destination] also re-aims [angle] at that point.
  *
  * @param location the actor's starting position; also its initial [destination].
  * @param dimensions the actor's size.
@@ -60,6 +65,28 @@ open class Actor(
     val speed get() = baseSpeed * speedModifier
 
     /**
+     * `true` once a [Movement.Targeting] actor has reached its [destination] and stopped.
+     * Cleared whenever a new [destination] is assigned or [movement] changes, so the actor
+     * resumes moving.
+     */
+    internal var hasSettled = false
+
+    /**
+     * How this actor decides where to move each [tick]. Defaults to [Movement.Targeting].
+     *
+     * @see Movement.Targeting
+     * @see Movement.Persistent
+     * @see Movement.Directional
+     * @see Movement.Homing
+     */
+    var movement: Movement = Movement.Targeting
+        set(value) {
+            field = value
+            hasSettled = false
+            log.debug("Actor movement set to {}.", value)
+        }
+
+    /**
      * The point the actor is moving towards.
      *
      * Assigning a new destination also updates [angle] to face it, measured in
@@ -72,6 +99,7 @@ open class Actor(
     var destination = Point(location)
         set(value) {
             field = value
+            hasSettled = false
             val dx = value.x - location.x
             val dy = value.y - location.y
             when {
@@ -110,11 +138,14 @@ open class Actor(
             )
         }
 
-    /** Advances the actor by one simulation step, then moves it towards [destination]. */
-    override fun tick() {
-        super.tick()
+    /** Runs the base per-frame work, then applies this tick's [movement]. */
+    override fun onUpdate() {
+        super.onUpdate()
         move().onFailure { cause -> log.error("Actor was not moved this tick.", cause) }
     }
+
+    /** Performs this tick's movement by delegating to the current [movement] strategy. */
+    internal fun move(): Result<Unit> = movement.step(this)
 
     /**
      * Steps the actor towards [destination], snapping onto it once within one step.
@@ -123,7 +154,7 @@ open class Actor(
      * the actor is already at its [destination]), or the failed [Result] from
      * [isOneStepAway] when the distance to [destination] cannot be measured.
      */
-    internal fun move(): Result<Unit> =
+    internal fun stepTowardsDestination(): Result<Unit> =
         if (isAtDestination) Result.success(Unit)
         else isOneStepAway.map { oneStepAway ->
             if (oneStepAway) {
@@ -131,4 +162,30 @@ open class Actor(
                 log.debug("Arrived at destination {}.", destination)
             } else location += locmod
         }
+
+    /**
+     * Steps the actor [speed] units along its current [angle].
+     *
+     * @return always [Result.success]; a whole-degree [angle] is always a valid heading.
+     */
+    internal fun stepAlongAngle(): Result<Unit> {
+        val radians = Math.toRadians(angle.toDouble())
+        location += Point(speed * cos(radians), speed * sin(radians))
+        log.debug("Stepped {} units along {} degrees to {}.", speed, angle, location)
+        return Result.success(Unit)
+    }
+
+    /**
+     * The actors indexed in [quadtree] whose position is within [range] of this actor's
+     * [location] on both axes - a square broad-phase window, this actor included when it is
+     * itself in the tree.
+     *
+     * @param quadtree the spatial index to query; the caller is responsible for keeping it current
+     * @param range half the width and height of the window centred on [location]
+     */
+    fun nearby(quadtree: Quadtree<Double, Actor>, range: Double): List<Actor> =
+        quadtree.retrieveBox(
+            location.x - range, location.y - range,
+            location.x + range, location.y + range
+        )
 }

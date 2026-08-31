@@ -19,6 +19,4 @@ internal class TestVisibleObject(
     y: Double,
     width: Double = 10.0,
     height: Double = 20.0
-) : VisibleObject(width = width, height = height, x = x, y = y) {
-    override fun onUpdate() = Unit
-}
+) : VisibleObject(width = width, height = height, x = x, y = y)

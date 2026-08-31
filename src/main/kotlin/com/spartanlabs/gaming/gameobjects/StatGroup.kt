@@ -12,7 +12,11 @@ package com.spartanlabs.gaming.gameobjects
  * @property maxValue the normal ceiling; must be positive
  * @property cap the hard ceiling; must be positive
  */
-data class StatGroup(var value: Double, var maxValue: Double, var cap: Double) {
+data class StatGroup(
+    var value: Double,
+    var maxValue: Double,
+    var cap: Double
+) {
 
     init {
         require(maxValue > 0) { "maxValue must be positive but was $maxValue" }
@@ -30,4 +34,22 @@ data class StatGroup(var value: Double, var maxValue: Double, var cap: Double) {
 
     /** `true` once [value] has reached the normal [maxValue]. */
     val isMaxed get() = value >= maxValue
+
+    /**
+     * Flat adjustments to this stat, keyed by a caller-chosen source name so each can be
+     * added or removed independently. Values may be negative.
+     */
+    val additiveMods: HashMap<String, Double> = hashMapOf()
+
+    /** The sum of every entry in [additiveMods]; `0.0` when there are none. */
+    val totalAdditiveMod get() = additiveMods.values.sum()
+
+    /**
+     * Scaling adjustments to this stat, keyed by a caller-chosen source name so each can be
+     * added or removed independently. Each value is a factor, e.g. `1.1` for +10%.
+     */
+    val multiplicativeMods: HashMap<String, Double> = hashMapOf()
+
+    /** The product of every entry in [multiplicativeMods]; `1.0` when there are none. */
+    val totalMultiplicativeMod get() = multiplicativeMods.values.fold(1.0) { acc, mod -> acc * mod }
 }

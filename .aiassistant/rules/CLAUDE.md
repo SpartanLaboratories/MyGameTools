@@ -52,3 +52,8 @@ Apply these strict rules to all code generation, refactoring, and test design.
 * For imports where multiple groups are appropriate use the following top-level group priority: 1,4,(2/3)
 * Create a group or subgroup even if only one member of that group exists
 * Always Clean up unused imports
+
+## 6. Version Nomenclature
+* Both when reading libraries from group "io.github.spartanlaboratories" and when declaring this library for publishing
+* use the following nomenclature for the version "MajorRelease.FeatureRelease.MinorChange" followed by a letter indicating a bug fix
+* For example if the version number is currently 1.3.5b and I say to bump the version feature release you will change it to 1.4.0

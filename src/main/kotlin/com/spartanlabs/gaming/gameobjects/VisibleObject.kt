@@ -12,6 +12,12 @@ import com.spartanlabs.geometry.serializations.DimensionsSnapshot
 import kotlinx.serialization.Serializable
 //endregion
 
+//region 3. Utility / Catch-all
+// 3.2 Kotlin
+// 3.2.1 Standard library
+import kotlin.math.abs
+//endregion
+
 /**
  * A [GameObject] that has something to draw: an [area], a [color], a [texture], and a
  * facing [angle]. It does not move on its own - [Actor] is the moving subclass - but it can
@@ -74,11 +80,39 @@ open class VisibleObject(
      */
     var turns: Boolean = false
 
+    /**
+     * Whether this object is sent to clients. `true` by default; a non-visible object - and
+     * any of its [subObjects] that are also non-visible - is left out of world-state
+     * snapshots entirely, so the client never hears about it.
+     *
+     * Kept in step with [active]: deactivating or reactivating the object sets [visible] to
+     * match. It can still be set on its own to hide an object that keeps simulating.
+     */
+    var visible: Boolean = true
+
+    /** Toggling a visible object's [active] state also sets [visible] to the same value. */
+    override var active: Boolean
+        get() = super.active
+        set(value) {
+            super.active = value
+            visible = value
+        }
+
     /** Objects drawn relative to this one, e.g. a health bar. Drawn in insertion order. */
     val subObjects: MutableList<VisibleObject> = mutableListOf()
 
-    /** A plain visible object has no per-frame logic of its own. */
-    override fun onUpdate() {}
+    /**
+     * `true` when this object's axis-aligned bounds overlap [other]'s.
+     *
+     * Each box is taken to be centred on its [location] with its [dimensions], so the two
+     * touch when the gap between their centres is no larger than the summed half-extents on
+     * every axis. A zero-size box can still collide (an exact-position overlap counts).
+     *
+     * @param other the object to test against
+     */
+    open fun collidesWith(other: VisibleObject): Boolean =
+        abs(location.x - other.location.x) <= (dimensions.width + other.dimensions.width) / 2.0 &&
+            abs(location.y - other.location.y) <= (dimensions.height + other.dimensions.height) / 2.0
 }
 
 /**
@@ -108,7 +142,7 @@ data class ColorSnapshot(val r: Int, val g: Int, val b: Int, val a: Int) {
  * @property texture the object's texture name at snapshot time
  * @property angle the object's facing in degrees at snapshot time
  * @property turns whether [angle] is meaningful for this object at snapshot time
- * @property subObjects snapshots of the object's [VisibleObject.subObjects], in order
+ * @property subObjects snapshots of the object's visible [VisibleObject.subObjects], in order
  */
 @Serializable
 data class VisibleObjectSnapshot(
@@ -120,7 +154,7 @@ data class VisibleObjectSnapshot(
     val turns: Boolean,
     val subObjects: List<VisibleObjectSnapshot>) {
     companion object {
-        /** Takes a snapshot of [visibleObject] and, recursively, its sub-objects. */
+        /** Takes a snapshot of [visibleObject] and, recursively, its visible sub-objects. */
         infix fun from(visibleObject: VisibleObject): VisibleObjectSnapshot = VisibleObjectSnapshot(
             GameObjectSnapshot.from(visibleObject),
             DimensionsSnapshot.from(visibleObject.dimensions),
@@ -128,7 +162,7 @@ data class VisibleObjectSnapshot(
             visibleObject.texture,
             angle = visibleObject.angle,
             turns = visibleObject.turns,
-            subObjects = visibleObject.subObjects.map(::from)
+            subObjects = visibleObject.subObjects.filter { it.visible }.map(::from)
         )
     }
 }
