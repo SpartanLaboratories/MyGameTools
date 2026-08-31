@@ -76,8 +76,12 @@ class Alive(
     /** [healthBar]'s width at full health, captured before any tick scales it down. */
     private val fullHealthBarWidth = dimensions.width
 
-    /** [healthBar]'s vertical offset from the actor's origin, fixed at the actor's starting size. */
-    private val healthBarYOffset = dimensions.height * HEALTH_BAR_HEIGHT_FRACTION
+    /**
+     * [healthBar]'s vertical offset from the actor's origin, fixed at the actor's starting size:
+     * half the actor's height to clear its top edge, plus half the bar's height so the bar rests
+     * just above it.
+     */
+    private val healthBarYOffset = dimensions.height * (0.5 + (HEALTH_BAR_HEIGHT_FRACTION / 2))
 
     /**
      * A red bar drawn a fraction of the actor's height above its origin.
@@ -121,7 +125,7 @@ class Alive(
         location.distanceFrom(other.location).map { distance -> distance <= visionRange }
 
     companion object {
-        /** [healthBar]'s height, and its vertical offset from the actor's origin, as a fraction of actor height. */
+        /** [healthBar]'s height as a fraction of actor height; also feeds [healthBarYOffset]. */
         private const val HEALTH_BAR_HEIGHT_FRACTION = 0.2
 
         /** The [visionRange] a new [Alive] starts with, in world units. */
