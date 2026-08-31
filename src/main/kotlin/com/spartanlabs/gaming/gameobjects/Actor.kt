@@ -176,14 +176,14 @@ open class Actor(
     }
 
     /**
-     * The actors indexed in [quadtree] whose position is within [range] of this actor's
+     * The objects indexed in [quadtree] whose position is within [range] of this actor's
      * [location] on both axes - a square broad-phase window, this actor included when it is
      * itself in the tree.
      *
      * @param quadtree the spatial index to query; the caller is responsible for keeping it current
      * @param range half the width and height of the window centred on [location]
      */
-    fun nearby(quadtree: Quadtree<Double, Actor>, range: Double): List<Actor> =
+    fun nearby(quadtree: Quadtree<Double, VisibleObject>, range: Double): List<VisibleObject> =
         quadtree.retrieveBox(
             location.x - range, location.y - range,
             location.x + range, location.y + range

@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
 /** Covers [DirectionalProjectile] travelling along a heading and piercing [Alive]s once each. */
 class DirectionalProjectileTest {
 
-    private val quadtree = Quadtree<Double, Actor>()
+    private val quadtree = Quadtree<Double, VisibleObject>()
 
     /** Rebuilds [quadtree] from [actors] the way a per-frame game loop would. */
     private fun index(vararg actors: Actor) {

@@ -30,6 +30,21 @@ class Alive(
     /** How much health this actor removes from a target when it attacks; defaults to `10.0`. */
     var damage: Double = 10.0
 
+    /**
+     * How far, in world units, this actor can perceive other objects. Must not be negative;
+     * defaults to [DEFAULT_VISION_RANGE].
+     *
+     * @throws IllegalArgumentException if assigned a negative value.
+     */
+    var visionRange: Double = DEFAULT_VISION_RANGE
+        set(value) {
+            if (value < 0) {
+                log.warn("Rejected vision range {}: vision range cannot be negative.", value)
+                require(value >= 0) { "vision range cannot be negative." }
+            }
+            field = value
+        }
+
     /** `true` while [health] is above zero. */
     val isAlive get() = health.value > 0.0
 
@@ -69,8 +84,22 @@ class Alive(
         healthBar.dimensions.width = fullHealthBarWidth * health.fractionOfMax.coerceIn(0.0, 1.0)
     }
 
+    /**
+     * `true` when [other] lies within this actor's [visionRange] of its [location].
+     *
+     * Carries the failed [Result] from [Point.distanceFrom] (rather than throwing) when
+     * either position holds a NaN coordinate.
+     *
+     * @param other the object to test for visibility
+     */
+    fun canSee(other: GameObject): Result<Boolean> =
+        location.distanceFrom(other.location).map { distance -> distance <= visionRange }
+
     companion object {
         /** [healthBar]'s height, and its vertical offset from the actor's origin, as a fraction of actor height. */
         private const val HEALTH_BAR_HEIGHT_FRACTION = 0.2
+
+        /** The [visionRange] a new [Alive] starts with, in world units. */
+        const val DEFAULT_VISION_RANGE = 100.0
     }
 }

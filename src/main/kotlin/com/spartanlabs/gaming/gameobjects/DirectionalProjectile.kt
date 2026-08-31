@@ -33,7 +33,7 @@ class DirectionalProjectile(
     damage: Double,
     directionAngle: Int,
     private val maxDuration: Int,
-    private val quadtree: Quadtree<Double, Actor>,
+    private val quadtree: Quadtree<Double, VisibleObject>,
     private val searchRadius: Double = dimensions.width * 3
 ) : Projectile(location = location, dimensions = dimensions, damage = damage) {
 

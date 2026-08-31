@@ -19,7 +19,7 @@ import kotlin.test.assertTrue
 /** Covers [HomingProjectile] chasing an [Alive], hitting it once on collision, and spending itself. */
 class HomingProjectileTest {
 
-    private val quadtree = Quadtree<Double, Actor>()
+    private val quadtree = Quadtree<Double, VisibleObject>()
 
     /** Rebuilds [quadtree] from [actors] the way a per-frame game loop would. */
     private fun index(vararg actors: Actor) {

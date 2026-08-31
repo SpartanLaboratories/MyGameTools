@@ -16,7 +16,7 @@ import com.spartanlabs.gaming.spatial.Quadtree
  * [quadtree] is the broad phase (which objects are near the projectile) and
  * [VisibleObject.collidesWith] is the narrow phase (do their bounds actually overlap). The
  * caller owns [quadtree] and is expected to refresh it (typically [Quadtree.clear] then
- * re-[Quadtree.insert] every actor) once per frame before ticking.
+ * re-[Quadtree.insert] every object, as [World.tick] does) once per frame before ticking.
  *
  * Deactivating also clears the projectile's `visible` flag (see [VisibleObject.active]), so a
  * spent projectile stops both simulating and being sent to clients.
@@ -32,7 +32,7 @@ class HomingProjectile(
     dimensions: Dimensions,
     damage: Double,
     private val target: Alive,
-    private val quadtree: Quadtree<Double, Actor>
+    private val quadtree: Quadtree<Double, VisibleObject>
 ) : Projectile(location = location, dimensions = dimensions, damage = damage) {
 
     /** `true` once the payload has been delivered, so it is never applied twice. */
