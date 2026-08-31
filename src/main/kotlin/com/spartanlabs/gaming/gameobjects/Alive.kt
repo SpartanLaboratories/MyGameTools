@@ -31,6 +31,25 @@ class Alive(
     var damage: Double = 10.0
 
     /**
+     * The side this actor belongs to, used to tell friend from foe. Defaults to
+     * [DEFAULT_FACTION]; callers compare factions however their game needs.
+     */
+    var faction: String = DEFAULT_FACTION
+
+    /**
+     * The [Player] this actor belongs to, or `null` when it is unowned. Assigning it does not
+     * touch [Player.ownedAlives]; use [Player.own] / [Player.disown] to keep a roster in step.
+     */
+    var owner: Player? = null
+        set(value) {
+            field = value
+            log.debug("An Alive is now owned by {}", value?.name ?: "no one")
+        }
+
+    /** `true` when this actor has an [owner]. */
+    val hasOwner: Boolean get() = owner != null
+
+    /**
      * How far, in world units, this actor can perceive other objects. Must not be negative;
      * defaults to [DEFAULT_VISION_RANGE].
      *
@@ -100,6 +119,9 @@ class Alive(
         private const val HEALTH_BAR_HEIGHT_FRACTION = 0.2
 
         /** The [visionRange] a new [Alive] starts with, in world units. */
-        const val DEFAULT_VISION_RANGE = 100.0
+        const val DEFAULT_VISION_RANGE = 900.0
+
+        /** The [faction] a new [Alive] starts in. */
+        const val DEFAULT_FACTION = "neutral"
     }
 }

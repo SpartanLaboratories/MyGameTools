@@ -11,6 +11,7 @@ import com.spartanlabs.geometry.Point
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 //endregion
 
@@ -81,5 +82,30 @@ class AliveTest {
         val actor = alive()
 
         assertTrue(actor.healthBar in actor.subObjects)
+    }
+
+    @Test
+    fun `a new actor is neutral and its faction can be reassigned`() {
+        val actor = alive()
+
+        assertEquals("neutral", actor.faction)
+        assertEquals(Alive.DEFAULT_FACTION, actor.faction)
+
+        actor.faction = "red"
+        assertEquals("red", actor.faction)
+    }
+
+    @Test
+    fun `a new actor is unowned until an owner is assigned`() {
+        val actor = alive()
+
+        assertNull(actor.owner)
+        assertFalse(actor.hasOwner)
+
+        val player = Player("alice")
+        actor.owner = player
+
+        assertEquals(player, actor.owner)
+        assertTrue(actor.hasOwner)
     }
 }

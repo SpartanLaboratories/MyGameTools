@@ -43,7 +43,7 @@ tasks.test {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    coordinates("io.github.spartanlaboratories", "GameTools", "1.5.0")
+    coordinates("io.github.spartanlaboratories", "GameTools", "1.5.1")
 
     pom {
         name.set("Game Tools")
