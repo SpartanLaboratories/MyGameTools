@@ -11,6 +11,8 @@ import com.spartanlabs.geometry.Point
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 //endregion
 
@@ -29,7 +31,7 @@ class PlayerTest {
     }
 
     @Test
-    fun `own adds an actor to the roster`() {
+    fun `own adds an actor to the roster and sets its owner`() {
         val player = Player("alice")
         val unit = alive()
 
@@ -37,6 +39,7 @@ class PlayerTest {
 
         assertEquals(listOf(unit), player.ownedAlives)
         assertTrue(player.owns(unit))
+        assertSame(player, unit.owner)
     }
 
     @Test
@@ -51,7 +54,7 @@ class PlayerTest {
     }
 
     @Test
-    fun `disown removes an owned actor and reports it`() {
+    fun `disown removes an owned actor, reports it, and clears its owner`() {
         val player = Player("alice")
         val unit = alive()
         player.own(unit)
@@ -60,6 +63,42 @@ class PlayerTest {
 
         assertFalse(player.owns(unit))
         assertTrue(player.ownedAlives.isEmpty())
+        assertNull(unit.owner)
+    }
+
+    @Test
+    fun `assigning owner directly adds the actor to that player's roster`() {
+        val player = Player("alice")
+        val unit = alive()
+
+        unit.owner = player
+
+        assertEquals(listOf(unit), player.ownedAlives)
+    }
+
+    @Test
+    fun `clearing owner directly removes the actor from the roster`() {
+        val player = Player("alice")
+        val unit = alive()
+        player.own(unit)
+
+        unit.owner = null
+
+        assertTrue(player.ownedAlives.isEmpty())
+    }
+
+    @Test
+    fun `taking ownership transfers the actor off the previous player's roster`() {
+        val alice = Player("alice")
+        val bob = Player("bob")
+        val unit = alive()
+        alice.own(unit)
+
+        assertTrue(bob.own(unit))
+
+        assertSame(bob, unit.owner)
+        assertEquals(listOf(unit), bob.ownedAlives)
+        assertTrue(alice.ownedAlives.isEmpty())
     }
 
     @Test

@@ -37,12 +37,18 @@ class Alive(
     var faction: String = DEFAULT_FACTION
 
     /**
-     * The [Player] this actor belongs to, or `null` when it is unowned. Assigning it does not
-     * touch [Player.ownedAlives]; use [Player.own] / [Player.disown] to keep a roster in step.
+     * The [Player] this actor belongs to, or `null` when it is unowned.
+     *
+     * Kept in step with [Player.ownedAlives] in both directions: assigning a new owner pulls
+     * this actor off the previous owner's roster and adds it to the new one, and
+     * [Player.own] / [Player.disown] drive this property.
      */
     var owner: Player? = null
         set(value) {
+            if (field === value) return
+            field?.removeFromRoster(this)
             field = value
+            value?.addToRoster(this)
             log.debug("An Alive is now owned by {}", value?.name ?: "no one")
         }
 
