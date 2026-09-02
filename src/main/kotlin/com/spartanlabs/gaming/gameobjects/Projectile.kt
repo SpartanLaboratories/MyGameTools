@@ -30,10 +30,10 @@ abstract class Projectile(
      * @param target the actor taking the hit
      */
     protected fun dealDamageTo(target: Alive) {
-        target.health.value -= damage
+        target.health.current -= damage
         log.debug(
             "A {} dealt {} damage; target health is now {}",
-            this::class.simpleName, damage, target.health.value
+            this::class.simpleName, damage, target.health.current
         )
     }
 }

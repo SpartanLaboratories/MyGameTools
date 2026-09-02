@@ -71,7 +71,7 @@ class DirectionalProjectileTest {
 
         repeat(5) { index(a); shot.tick() }
 
-        assertEquals(70.0, a.health.value, absoluteTolerance = 1e-9)
+        assertEquals(70.0, a.health.current, absoluteTolerance = 1e-9)
     }
 
     @Test
@@ -82,8 +82,8 @@ class DirectionalProjectileTest {
 
         repeat(5) { index(a, b); shot.tick() }
 
-        assertEquals(75.0, a.health.value, absoluteTolerance = 1e-9)
-        assertEquals(75.0, b.health.value, absoluteTolerance = 1e-9)
+        assertEquals(75.0, a.health.current, absoluteTolerance = 1e-9)
+        assertEquals(75.0, b.health.current, absoluteTolerance = 1e-9)
     }
 
     @Test
@@ -93,7 +93,7 @@ class DirectionalProjectileTest {
 
         repeat(5) { index(a); shot.tick() }
 
-        assertEquals(100.0, a.health.value)
+        assertEquals(100.0, a.health.current)
     }
 
     @Test

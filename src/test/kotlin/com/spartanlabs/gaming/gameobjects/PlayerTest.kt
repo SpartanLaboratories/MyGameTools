@@ -110,7 +110,7 @@ class PlayerTest {
     fun `livingAlives excludes owned actors whose health has run out`() {
         val player = Player("alice")
         val healthy = alive()
-        val dead = alive().apply { health.value = 0.0 }
+        val dead = alive().apply { health.current = 0.0 }
         player.own(healthy)
         player.own(dead)
 

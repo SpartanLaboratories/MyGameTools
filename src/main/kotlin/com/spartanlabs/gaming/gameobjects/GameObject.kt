@@ -70,6 +70,14 @@ abstract class GameObject(val location: Point = Point()) {
      * `super.onUpdate()` first so an ancestor's per-frame work still runs.
      */
     protected open fun onUpdate() {}
+
+    /**
+     * The straight-line distance from this object's [location] to [other]'s, or the failure from
+     * [Point.distanceFrom] when either position holds a NaN coordinate.
+     *
+     * @param other the object to measure to
+     */
+    infix fun distanceFrom(other: GameObject): Result<Double> = location distanceFrom other.location
 }
 
 /**

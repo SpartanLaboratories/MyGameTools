@@ -29,11 +29,31 @@ open class Alive(
     maxHealth: Double
 ) : Actor(location = location, dimensions = dimensions) {
 
+    //region STATS
     /** The actor's health, from `maxHealth` down to (and past) zero. */
-    var health: StatGroup = StatGroup(value = maxHealth, maxValue = maxHealth, cap = maxHealth)
+    var health: CombinedStat = CombinedStat(startingValue = maxHealth, maxValue = maxHealth)
 
-    /** How much health this actor removes from a target when it attacks; defaults to `10.0`. */
-    var damage: Double = 10.0
+    /** How much health this actor removes from a target on a successful hit; defaults to `10.0`. */
+    var damage: ModularStat = ModularStat(10.0)
+
+    /** Swing progress a pending attack must reach before it lands, paced by [attackSpeed]; defaults to `1.7`. */
+    var attackTime: ModularStat = ModularStat(1.7)
+
+    /** How fast swing progress accrues while an attack is in progress (`attackSpeed / 10000` per tick); defaults to `100.0`. */
+    var attackSpeed: ModularStat = ModularStat(100.0)
+
+    /** How close, in world units, this actor must be to its target before it starts swinging; defaults to `750.0`. */
+    var attackRange: ModularStat = ModularStat(750.0)
+
+    /** Probability in `0.0..1.0` that this actor dodges an incoming hit; defaults to `0.0` (never). */
+    var evasion: ModularStat = ModularStat(0.0)
+    //endregion
+    //region OWNERSHIP
+    /**
+     * The [World] this actor belongs to, or `null` when it is not in one. [World.add] sets it;
+     * a [DeathResponse.REMOVAL] death needs it so the actor can reach [World.removeList].
+     */
+    var world: World? = null
 
     /**
      * The side this actor belongs to, used to tell friend from foe. Defaults to
@@ -59,37 +79,165 @@ open class Alive(
 
     /** `true` when this actor has an [owner]. */
     val hasOwner: Boolean get() = owner != null
+    //endregion
+    //region COMBAT
+    /** Stage of the attack cycle driven each tick by [considerAttack]. */
+    private enum class AttackState { NONE, ISSUED, INPROGRESS }
+    private var attackState: AttackState = AttackState.NONE
+    private var attackTarget: Alive? = null
+    private var attackProgress: Double = 0.0
 
     /**
-     * How far, in world units, this actor can perceive other objects. Must not be negative;
-     * defaults to [DEFAULT_VISION_RANGE].
-     *
-     * @throws IllegalArgumentException if assigned a negative value.
+     * Orders this actor to attack [target]: it will close to [attackRange], then swing on a
+     * loop until told otherwise. Fires [onAttackIssued] here and [Alive.onTargetedByAttack] on
+     * [target].
      */
-    var visionRange: Double = DEFAULT_VISION_RANGE
-        set(value) {
-            if (value < 0) {
-                log.warn("Rejected vision range {}: vision range cannot be negative.", value)
-                require(value >= 0) { "vision range cannot be negative." }
+    fun issueAttack(target: Alive) {
+        attackState = AttackState.ISSUED
+        attackTarget = target
+        onAttackIssued()
+        target.onTargetedByAttack()
+    }
+
+    /** Hook run on the attacker the moment [issueAttack] is called. Does nothing by default. */
+    protected open fun onAttackIssued() {}
+
+    /** Hook run on the target the moment it is named in an [issueAttack]. Does nothing by default. */
+    protected open fun onTargetedByAttack() {}
+
+    /**
+     * One tick of the attack cycle: while a target is out of [attackRange] this actor walks
+     * toward it, and once in range it swings via [progressAttack]. A failed distance check is
+     * logged and treated as in-range so the actor keeps engaging.
+     */
+    private fun considerAttack() = when (attackState) {
+        AttackState.NONE -> {}
+        AttackState.ISSUED -> {
+            val distance = distanceFrom(attackTarget!!).getOrElse {
+                log.warn("Failed to calculate distance between two Alives during attack stage")
+                0.0
             }
-            field = value
+            if (distance > attackRange)
+                destination = attackTarget!!.location
+            else
+                attackState = AttackState.INPROGRESS
         }
+        AttackState.INPROGRESS -> progressAttack()
+    }
+
+    /** Accrues swing progress by [attackSpeed] each tick and, once it reaches [attackTime], lands a swing. */
+    private fun progressAttack() {
+        attackProgress += attackSpeed / 10000.0
+        if (attackProgress >= attackTime) {
+            attackProgress = 0.0
+            attackState = AttackState.ISSUED
+            this attack attackTarget!!
+        }
+    }
+
+    /** Runs one swing at [target]: [onAttack] / [onAttacked] hooks, then an evasion-gated [hit]. */
+    private infix fun attack(target: Alive) {
+        this onAttack target
+        target onAttacked this
+        this attemptHit target
+    }
+
+    /** Hook run on the attacker at the start of each swing. Does nothing by default. */
+    protected open infix fun onAttack(target: Alive) {}
+
+    /** Hook run on the target at the start of each swing against it. Does nothing by default. */
+    protected open infix fun onAttacked(attacker: Alive) {}
+
+    /** Rolls [target]'s [evasion]; on a miss the swing is dropped, otherwise it proceeds to [hit]. */
+    private infix fun attemptHit(target: Alive) = if (Math.random() > target.evasion) hit(target) else Unit
+
+    /** A landed swing: [onHitting] / [onHitBy] hooks, then [dealDamage]. */
+    private infix fun hit(target: Alive) {
+        this onHitting target
+        target onHitBy this
+        this dealDamage target
+    }
+
+    /** Hook run on the attacker when a swing lands. Does nothing by default. */
+    protected open infix fun onHitting(target: Alive) {}
+
+    /** Hook run on the target when a swing lands on it. Does nothing by default. */
+    protected open infix fun onHitBy(attacker: Alive) {}
+
+    /** Applies this actor's [damage] to [target]: [onDamaging] / [onDamaged] hooks, then [takeDamage]. */
+    private infix fun dealDamage(target: Alive) {
+        this onDamaging target
+        target onDamaged this
+        target takeDamage damage.value
+    }
+
+    /** Hook run on the attacker as damage is dealt. Does nothing by default. */
+    protected open infix fun onDamaging(target: Alive) {}
+
+    /** Hook run on the target as damage is dealt to it. Does nothing by default. */
+    protected open infix fun onDamaged(attacker: Alive) {}
+
+    /** Subtracts [incomingDamage], after [calculateDamageTaken], from [health]. */
+    private infix fun takeDamage(incomingDamage: Double) {
+        health.current -= calculateDamageTaken(incomingDamage)
+    }
+
+    /** Converts raw [incomingDamage] into the amount actually lost; the base rule passes it through unchanged. */
+    private infix fun calculateDamageTaken(incomingDamage: Double): Double = incomingDamage
+    //endregion
+    //region DEATH
+    /** `true` while [health] is above zero. */
+    val isAlive get() = health.current > 0.0
 
     /** Where a [DeathResponse.RESPAWN] returns this actor to. Defaults to its creation position. */
     var respawn: Point = Point(location)
 
     /** What this actor does the moment its [health] runs out. Defaults to [DeathResponse.REMOVAL]. */
     var deathResponse: DeathResponse = DeathResponse.REMOVAL
+    /** What an [Alive] does the moment its [health] runs out. */
+    enum class DeathResponse {
+        /** Queue the actor into its [World.removeList] so it drops out of the game. */
+        REMOVAL,
 
+        /** Send the actor back to its [respawn] point at full [health]. */
+        RESPAWN
+    }
+    /** Guards [die] so one death triggers one response; cleared once the actor is alive again. */
+    private var deathHandled = false
     /**
-     * The [World] this actor belongs to, or `null` when it is not in one. [World.add] sets it;
-     * a [DeathResponse.REMOVAL] death needs it so the actor can reach [World.removeList].
+     * Applies [deathResponse] the first tick this actor's [health] runs out. Runs once per
+     * death; a [DeathResponse.RESPAWN] actor can die again once it is back.
+     *
+     * - [DeathResponse.REMOVAL] queues the actor into its [world]'s [World.removeList].
+     * - [DeathResponse.RESPAWN] moves it to [respawn] and restores full [health].
      */
-    var world: World? = null
+    protected open fun die() {
+        if (deathHandled) return
+        deathHandled = true
+        log.debug("An Alive died at {} (response {})", location, deathResponse)
+        when (deathResponse) {
+            DeathResponse.REMOVAL -> {
+                val host = world
+                if (host == null) log.warn("An Alive died with REMOVAL but has no world; it stays in play")
+                else host.removeList.add(this)
+            }
+            DeathResponse.RESPAWN -> {
+                location.setTo(respawn)
+                health.current = health.max.value
+                deathHandled = false
+                log.debug("An Alive respawned at {} with {} health", respawn, health.max.value)
+            }
+        }
+        onDeath()
+    }
 
-    /** `true` while [health] is above zero. */
-    val isAlive get() = health.value > 0.0
+    /** Extension point invoked once after [die] has applied the [deathResponse]. Does nothing by default. */
+    protected open fun onDeath() {}
 
+    /** Triggers [die] the first tick [health] is depleted, and re-arms it once the actor is alive again. */
+    private fun contemplateLife() = if (!isAlive) die() else deathHandled = false
+    //endregion
+    //region HEALTH BAR
     /** [healthBar]'s width at full health, captured before any tick scales it down. */
     private val fullHealthBarWidth = dimensions.width
 
@@ -117,88 +265,39 @@ open class Alive(
         ),
         color = Color(255, 0, 0)
     )
-
+    /** Moves [healthBar] back onto the actor and scales its width to the current [health] fraction. */
+    private fun updateHealthBar() {
+        healthBar.location.setTo(location.x, location.y - healthBarYOffset)
+        healthBar.dimensions.width = fullHealthBarWidth * health.fractionOfMax.coerceIn(0.0, 1.0)
+    }
+    //endregion
+    //region GENERAL
     init {
         subObjects.add(healthBar)
         log.debug("Spawned an Alive at {} with {} health", location, maxHealth)
     }
 
-    /** Guards [die] so one death triggers one response; cleared once the actor is alive again. */
-    private var deathHandled = false
-
     /**
-     * Advances the actor, applies its [deathResponse] if it has just died, then moves
-     * [healthBar] onto it and resizes it to the current [health] fraction.
+     * Advances the actor: applies its [deathResponse] if it has just died, refreshes the
+     * [healthBar]'s position and width, then runs one tick of any pending attack.
      */
     override fun onUpdate() {
         super.onUpdate()
-        if (!isAlive) die() else deathHandled = false
-        healthBar.location.setTo(location.x, location.y - healthBarYOffset)
-        healthBar.dimensions.width = fullHealthBarWidth * health.fractionOfMax.coerceIn(0.0, 1.0)
+        contemplateLife()
+        updateHealthBar()
+        considerAttack()
     }
-
-    /**
-     * Applies [deathResponse] the first tick this actor's [health] runs out. Runs once per
-     * death; a [DeathResponse.RESPAWN] actor can die again once it is back.
-     *
-     * - [DeathResponse.REMOVAL] queues the actor into its [world]'s [World.removeList].
-     * - [DeathResponse.RESPAWN] moves it to [respawn] and restores full [health].
-     */
-    protected open fun die() {
-        if (deathHandled) return
-        deathHandled = true
-        log.debug("An Alive died at {} (response {})", location, deathResponse)
-        when (deathResponse) {
-            DeathResponse.REMOVAL -> {
-                val host = world
-                if (host == null) log.warn("An Alive died with REMOVAL but has no world; it stays in play")
-                else host.removeList.add(this)
-            }
-            DeathResponse.RESPAWN -> {
-                location.setTo(respawn)
-                health.value = health.maxValue
-                deathHandled = false
-                log.debug("An Alive respawned at {} with {} health", respawn, health.maxValue)
-            }
-        }
-        onDeath()
-    }
-
-    /** Extension point invoked once after [die] has applied the [deathResponse]. Does nothing by default. */
-    protected open fun onDeath() {}
-
-    /**
-     * `true` when [other] lies within this actor's [visionRange] of its [location].
-     *
-     * Carries the failed [Result] from [Point.distanceFrom] (rather than throwing) when
-     * either position holds a NaN coordinate.
-     *
-     * @param other the object to test for visibility
-     */
-    fun canSee(other: GameObject): Result<Boolean> =
-        location.distanceFrom(other.location).map { distance -> distance <= visionRange }
-
-    /** What an [Alive] does the moment its [health] runs out. */
-    enum class DeathResponse {
-        /** Queue the actor into its [World.removeList] so it drops out of the game. */
-        REMOVAL,
-
-        /** Send the actor back to its [respawn] point at full [health]. */
-        RESPAWN
-    }
+    //endregion
 
     companion object {
         /** [healthBar]'s height as a fraction of actor height; also feeds [healthBarYOffset]. */
         private const val HEALTH_BAR_HEIGHT_FRACTION = 0.2
 
-        /** The [visionRange] a new [Alive] starts with, in world units. */
-        const val DEFAULT_VISION_RANGE = 900.0
-
         /** The [faction] a new [Alive] starts in. */
         const val DEFAULT_FACTION = "neutral"
     }
 }
-
+//region SERIALIZATION
 /**
  * An immutable, serializable copy of an [Alive]'s state, layered on its [ActorSnapshot]: its
  * health, side, owner, and attack damage. Sent in place of an [ActorSnapshot] whenever a
@@ -214,7 +313,7 @@ open class Alive(
 @SerialName("alive")
 data class AliveSnapshot(
     val actor: ActorSnapshot,
-    val health: StatGroupSnapshot,
+    val health: CombinedStatSnapshot,
     val faction: String,
     val ownerName: String?,
     val damage: Double) : DrawableSnapshot {
@@ -226,10 +325,11 @@ data class AliveSnapshot(
         /** Takes a snapshot of [alive]'s stats along with its movement, drawable state, and sub-objects. */
         infix fun from(alive: Alive): AliveSnapshot = AliveSnapshot(
             ActorSnapshot.from(alive),
-            health = StatGroupSnapshot.from(alive.health),
+            health = CombinedStatSnapshot.from(alive.health),
             faction = alive.faction,
             ownerName = alive.owner?.name,
-            damage = alive.damage
+            damage = alive.damage.value
         )
     }
 }
+//endregion

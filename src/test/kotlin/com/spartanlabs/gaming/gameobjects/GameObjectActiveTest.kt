@@ -68,7 +68,7 @@ class GameObjectActiveTest {
             maxHealth = 100.0
         )
         actor.active = false
-        actor.health.value = 40.0
+        actor.health.current = 40.0
 
         actor.tick()
 

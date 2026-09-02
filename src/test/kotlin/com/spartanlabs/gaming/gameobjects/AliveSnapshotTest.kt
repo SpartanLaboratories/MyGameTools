@@ -31,9 +31,9 @@ class AliveSnapshotTest {
     @Test
     fun `from captures health, faction, damage, and the underlying actor state`() {
         val actor = alive(maxHealth = 120.0).apply {
-            health.value = 45.0
+            health.current = 45.0
             faction = "red"
-            damage = 7.5
+            damage = ModularStat(7.5)
             destination = Point(30.0, 4.0)
         }
 

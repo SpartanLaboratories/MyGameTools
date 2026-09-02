@@ -59,7 +59,7 @@ class HomingProjectileTest {
         index(target)
         shot.tick() // steps to (10,0); target is at (100,0)
 
-        assertEquals(100.0, target.health.value)
+        assertEquals(100.0, target.health.current)
         assertTrue(shot.active)
     }
 
@@ -70,7 +70,7 @@ class HomingProjectileTest {
 
         repeat(2) { index(target); shot.tick() } // reach = (4+20)/2 = 12; collides at (20,0)
 
-        assertEquals(70.0, target.health.value, absoluteTolerance = 1e-9)
+        assertEquals(70.0, target.health.current, absoluteTolerance = 1e-9)
         assertFalse(shot.active)
         assertFalse(shot.visible)
         assertTrue(shot.location.x < target.location.x, "should have hit before arriving")
@@ -83,7 +83,7 @@ class HomingProjectileTest {
 
         repeat(10) { index(target); shot.tick() }
 
-        assertEquals(60.0, target.health.value, absoluteTolerance = 1e-9)
+        assertEquals(60.0, target.health.current, absoluteTolerance = 1e-9)
         assertFalse(shot.active)
     }
 }

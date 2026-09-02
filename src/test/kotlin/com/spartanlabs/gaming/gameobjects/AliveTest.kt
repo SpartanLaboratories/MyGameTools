@@ -47,7 +47,7 @@ class AliveTest {
     @Test
     fun `the health bar shrinks proportionally as health drops`() {
         val actor = alive(maxHealth = 100.0)
-        actor.health.value = 40.0
+        actor.health.current = 40.0
 
         actor.tick()
 
@@ -57,7 +57,7 @@ class AliveTest {
     @Test
     fun `the health bar width never goes negative when health is below zero`() {
         val actor = alive(maxHealth = 100.0)
-        actor.health.value = -10.0
+        actor.health.current = -10.0
 
         actor.tick()
 

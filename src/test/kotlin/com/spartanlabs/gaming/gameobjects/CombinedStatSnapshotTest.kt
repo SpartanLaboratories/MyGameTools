@@ -12,22 +12,21 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 //endregion
 
-/** Covers [StatGroupSnapshot] copying a [StatGroup]'s three numbers and its JSON round trip. */
-class StatGroupSnapshotTest {
+/** Covers [CombinedStatSnapshot] copying a [CombinedStat]'s numbers and its JSON round trip. */
+class CombinedStatSnapshotTest {
 
     @Test
-    fun `from copies value, maxValue, and cap`() {
-        val snapshot = StatGroupSnapshot from StatGroup(value = 30.0, maxValue = 100.0, cap = 150.0)
+    fun `from copies the current amount and the max`() {
+        val snapshot = CombinedStatSnapshot from CombinedStat(startingValue = 30.0, maxValue = 100.0)
 
         assertEquals(30.0, snapshot.value)
         assertEquals(100.0, snapshot.maxValue)
-        assertEquals(150.0, snapshot.cap)
     }
 
     @Test
     fun `the snapshot survives a JSON round trip unchanged`() {
-        val snapshot = StatGroupSnapshot from StatGroup(value = 5.0, maxValue = 10.0, cap = 20.0)
+        val snapshot = CombinedStatSnapshot from CombinedStat(startingValue = 5.0, maxValue = 10.0)
 
-        assertEquals(snapshot, Json.decodeFromString<StatGroupSnapshot>(Json.encodeToString(snapshot)))
+        assertEquals(snapshot, Json.decodeFromString<CombinedStatSnapshot>(Json.encodeToString(snapshot)))
     }
 }

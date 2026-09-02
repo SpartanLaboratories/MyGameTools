@@ -16,17 +16,21 @@ Apply these strict rules to all code generation, refactoring, and test design.
 * Return `Result.success(value)` or `Result.failure(exception)`.
 * Prefer functional error recovery over `try-catch` blocks where appropriate.
 
-## 3. Logging & Documentation
+## 3. Logging
 * Include structured **logging** statements for key lifecycle events, data flows, and failure states.
 * For libraries use slf4j and for testing use a logback implementation
-* Document all public classes, interfaces, and functions using formal **KDoc comments** (`/** ... */`).
 
 ## 4. Testing Structure
 * Provide comprehensive unit tests using a standard framework (e.g., JUnit 5, MockK).
 * Structure your test code strictly with **separate test classes per file**.
 * Do not bundle multiple test classes into a single file.
 
-## 5. Import Grouping Comments
+## 5. Documentation Comments
+* Document all public classes, interfaces, and functions using formal **KDoc comments** (`/** ... */`).
+* Separate file contents into region/endregion groups
+* For complex logic inside a function add comments to explain it
+
+## 6. Import Grouping Comments
 * Use Kotlin collapsible region/endregion markers for each top-level group
 * Use the following format: "// 1. Organization Internal", "// 1.1 Spartan Laboratories"
 * Use comments to organize imports into the following groups:

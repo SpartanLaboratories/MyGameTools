@@ -56,7 +56,7 @@ class AliveDeathTest {
         val actor = alive()
         world.add(actor)
         actor.deathResponse = Alive.DeathResponse.REMOVAL
-        actor.health.value = 0.0
+        actor.health.current = 0.0
 
         world.tick()
 
@@ -67,7 +67,7 @@ class AliveDeathTest {
     @Test
     fun `a REMOVAL death without a world does not throw and leaves the actor in play`() {
         val actor = alive()
-        actor.health.value = 0.0
+        actor.health.current = 0.0
 
         actor.tick()
 
@@ -81,13 +81,13 @@ class AliveDeathTest {
         world.add(actor)
         actor.deathResponse = Alive.DeathResponse.RESPAWN
         actor.location.setTo(50.0, 50.0)
-        actor.health.value = 0.0
+        actor.health.current = 0.0
 
         world.tick()
 
         assertEquals(5.0, actor.location.x, absoluteTolerance = 1e-9)
         assertEquals(7.0, actor.location.y, absoluteTolerance = 1e-9)
-        assertEquals(actor.health.maxValue, actor.health.value)
+        assertEquals(actor.health.max.value, actor.health.current)
         assertTrue(actor in world.gameObjects)
     }
 
@@ -98,13 +98,13 @@ class AliveDeathTest {
         world.add(actor)
         actor.deathResponse = Alive.DeathResponse.RESPAWN
 
-        actor.health.value = 0.0
+        actor.health.current = 0.0
         world.tick()
-        assertEquals(actor.health.maxValue, actor.health.value)
+        assertEquals(actor.health.max.value, actor.health.current)
 
-        actor.health.value = 0.0
+        actor.health.current = 0.0
         world.tick()
-        assertEquals(actor.health.maxValue, actor.health.value)
+        assertEquals(actor.health.max.value, actor.health.current)
     }
 
     @Test
@@ -113,7 +113,7 @@ class AliveDeathTest {
         val actor = alive()
         world.add(actor)
         actor.deathResponse = Alive.DeathResponse.REMOVAL
-        actor.health.value = 0.0
+        actor.health.current = 0.0
 
         actor.tick()
         actor.tick()
