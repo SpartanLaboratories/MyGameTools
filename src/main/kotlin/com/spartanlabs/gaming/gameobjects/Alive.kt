@@ -300,14 +300,21 @@ open class Alive(
 //region SERIALIZATION
 /**
  * An immutable, serializable copy of an [Alive]'s state, layered on its [ActorSnapshot]: its
- * health, side, owner, and attack damage. Sent in place of an [ActorSnapshot] whenever a
+ * health, side, owner, and combat stats. Sent in place of an [ActorSnapshot] whenever a
  * broadcast object is an [Alive] (see [DrawableSnapshot]).
+ *
+ * Each combat stat is captured as its effective [ModularStat.value] at snapshot time, with
+ * every applied [StatMod] already folded in.
  *
  * @property actor the underlying [ActorSnapshot] - movement, drawable state, sub-objects
  * @property health the actor's health at snapshot time
  * @property faction the side the actor belongs to at snapshot time
  * @property ownerName the name of the actor's [Alive.owner], or `null` when it is unowned
- * @property damage the health the actor removes from a target when it attacks
+ * @property damage the health the actor removes from a target when it attacks ([Alive.damage])
+ * @property attackTime the swing progress a pending attack must reach before it lands ([Alive.attackTime])
+ * @property attackSpeed how fast swing progress accrues while attacking ([Alive.attackSpeed])
+ * @property attackRange how close the actor must be to its target before it swings ([Alive.attackRange])
+ * @property evasion the actor's chance in `0.0..1.0` to dodge an incoming hit ([Alive.evasion])
  */
 @Serializable
 @SerialName("alive")
@@ -316,7 +323,11 @@ data class AliveSnapshot(
     val health: CombinedStatSnapshot,
     val faction: String,
     val ownerName: String?,
-    val damage: Double) : DrawableSnapshot {
+    val damage: Double,
+    val attackTime: Double,
+    val attackSpeed: Double,
+    val attackRange: Double,
+    val evasion: Double) : DrawableSnapshot {
 
     /** The actor's sub-object snapshots - the same list as [actor]'s. */
     override val subObjects: List<DrawableSnapshot> get() = actor.subObjects
@@ -328,7 +339,11 @@ data class AliveSnapshot(
             health = CombinedStatSnapshot.from(alive.health),
             faction = alive.faction,
             ownerName = alive.owner?.name,
-            damage = alive.damage.value
+            damage = alive.damage.value,
+            attackTime = alive.attackTime.value,
+            attackSpeed = alive.attackSpeed.value,
+            attackRange = alive.attackRange.value,
+            evasion = alive.evasion.value
         )
     }
 }

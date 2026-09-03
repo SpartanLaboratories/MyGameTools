@@ -39,36 +39,16 @@ open class Actor(
     dimensions: Dimensions = Dimensions(),
 ):VisibleObject(location = location, dimensions = dimensions) {
     /**
-     * The actor's unmodified movement rate in units per tick.
+     * The actor's movement rate in units per tick.
      *
-     * @throws IllegalArgumentException if assigned a negative value.
+     * A [ModularStat] so that hastes and slows can be layered on as [StatMod]s rather than
+     * folded into one multiplier: adjust [ModularStat.base] for a permanent change, or
+     * [ModularStat.applyMod] / [ModularStat.removeMod] for temporary ones. Its effective
+     * [ModularStat.value] (base `10.0`) is what each [Movement] strategy advances the actor by,
+     * and what [ActorSnapshot] captures. A negative value simply runs the actor backwards; it
+     * is not rejected.
      */
-    var baseSpeed : Double      = 10.0
-        set(value) {
-            if (value < 0) {
-                log.warn("Rejected base speed {}: base speed cannot be negative.", value)
-                require(value >= 0) { "base speed cannot be negative." }
-            }
-            field = value
-        }
-
-    /**
-     * Multiplier applied to [baseSpeed] to produce the effective [speed]
-     * (e.g. slows, hastes). Defaults to `1.0`.
-     *
-     * @throws IllegalArgumentException if assigned a negative value.
-     */
-    var speedModifier : Double  = 1.0
-        set(value) {
-            if (value < 0) {
-                log.warn("Rejected speed modifier {}: speed modifier cannot be negative.", value)
-                require(value >= 0) { "speed modifier cannot be negative." }
-            }
-            field = value
-        }
-
-    /** Effective movement rate in units per tick: [baseSpeed] scaled by [speedModifier]. */
-    val speed get() = baseSpeed * speedModifier
+    var speed: ModularStat = ModularStat(base = 10.0)
 
     /**
      * `true` once a [Movement.Targeting] actor has reached its [destination] and stopped.
@@ -202,7 +182,8 @@ open class Actor(
  * whenever a broadcast object is an [Actor] (see [DrawableSnapshot]).
  *
  * @property visibleObject the underlying [VisibleObjectSnapshot] - position, size, drawable state, sub-objects
- * @property speed the actor's effective movement rate in units per tick at snapshot time
+ * @property speed the actor's effective movement rate ([Actor.speed]'s [ModularStat.value]) in
+ *   units per tick at snapshot time
  * @property destination the point the actor was moving towards at snapshot time
  */
 @Serializable
@@ -219,7 +200,7 @@ data class ActorSnapshot(
         /** Takes a snapshot of [actor]'s movement state along with its drawable state and sub-objects. */
         infix fun from(actor: Actor): ActorSnapshot = ActorSnapshot(
             VisibleObjectSnapshot.from(actor),
-            speed = actor.speed,
+            speed = actor.speed.value,
             destination = PointSnapshot.from(actor.destination)
         )
     }
