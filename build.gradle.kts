@@ -93,7 +93,7 @@ mavenPublishing {
     signAllPublications()
     // Build the Maven Central javadoc jar from Dokka output instead of an empty placeholder.
     configure(JavaLibrary(javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"), sourcesJar = true))
-    coordinates("io.github.spartanlaboratories", "GameTools", "1.8.0")
+    coordinates("io.github.spartanlaboratories", "GameTools", "1.9.0")
 
     pom {
         name.set("Game Tools")

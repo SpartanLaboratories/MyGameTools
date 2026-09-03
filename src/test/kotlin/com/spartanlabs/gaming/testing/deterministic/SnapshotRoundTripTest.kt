@@ -9,7 +9,10 @@ import com.spartanlabs.gaming.gameobjects.Actor
 import com.spartanlabs.gaming.gameobjects.ActorSnapshot
 import com.spartanlabs.gaming.gameobjects.Alive
 import com.spartanlabs.gaming.gameobjects.AliveSnapshot
+import com.spartanlabs.gaming.gameobjects.Buff
+import com.spartanlabs.gaming.gameobjects.CoreCapability
 import com.spartanlabs.gaming.gameobjects.DrawableSnapshot
+import com.spartanlabs.gaming.gameobjects.StatMod
 import com.spartanlabs.gaming.gameobjects.VisibleObject
 import com.spartanlabs.gaming.gameobjects.VisibleObjectSnapshot
 //endregion
@@ -48,11 +51,20 @@ class SnapshotRoundTripTest {
     private fun randomPoint() = Point(random.nextDouble(-500.0, 500.0), random.nextDouble(-500.0, 500.0))
     private fun randomDimensions() = Dimensions(random.nextDouble(1.0, 60.0), random.nextDouble(1.0, 60.0))
 
+    /** A randomised buff, half the time indefinite, half the time suppressing a capability. */
+    private fun randomBuff(index: Int) = Buff(
+        name = "buff-$index",
+        durationTicks = if (random.nextBoolean()) -1 else random.nextInt(1, 20),
+        statMods = mapOf("speed" to StatMod("mod-$index", random.nextDouble(-0.5, 0.5))),
+        suppressedCapabilities = if (random.nextBoolean()) setOf(CoreCapability.MOVE) else emptySet()
+    )
+
     /** One object of each kind, at randomised position/size/angle, optionally carrying [subObjects]. */
     private fun objectsOfEachKind(subObjects: List<VisibleObject> = emptyList()): List<VisibleObject> {
         fun attach(target: VisibleObject) = target.apply {
             angle = random.nextInt(0, 360)
             this.subObjects += subObjects
+            repeat(random.nextInt(0, 3)) { applyBuff(randomBuff(it)) }
         }
         return listOf(
             attach(VisibleObject(dimensions = randomDimensions(), location = randomPoint())),
@@ -75,6 +87,24 @@ class SnapshotRoundTripTest {
             val restored = Json.decodeFromString<DrawableSnapshot>(Json.encodeToString(snapshot))
             assertEquals(snapshot, restored, "round trip changed the snapshot for ${obj::class.simpleName}")
         }
+    }
+
+    @Test
+    fun `an object's active buffs travel with its snapshot and survive the round trip`() {
+        val actor = Actor(location = randomPoint(), dimensions = randomDimensions()).apply {
+            applyBuff(Buff("root", durationTicks = 7, suppressedCapabilities = setOf(CoreCapability.MOVE)))
+            applyBuff(Buff("haste", durationTicks = -1, statMods = mapOf("speed" to StatMod("haste", 0.3))))
+        }
+
+        val snapshot = DrawableSnapshot from actor
+        val restored = Json.decodeFromString<DrawableSnapshot>(Json.encodeToString(snapshot))
+
+        assertIs<ActorSnapshot>(restored)
+        val buffs = restored.visibleObject.gameObject.buffs
+        assertEquals(listOf("root", "haste"), buffs.map { it.name })
+        assertEquals(listOf("move"), buffs.first().suppressedCapabilities)
+        assertEquals(-1, buffs[1].durationTicks)
+        assertEquals(snapshot, restored)
     }
 
     @Test

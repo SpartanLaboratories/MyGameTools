@@ -38,6 +38,15 @@ open class Actor(
     location : Point = Point(),
     dimensions: Dimensions = Dimensions(),
 ):VisibleObject(location = location, dimensions = dimensions) {
+
+    //region CAPABILITIES
+    /** An actor adds [CoreCapability.MOVE] to whatever its supertypes provide. */
+    override val capabilities: Set<Capability> = super.capabilities + CoreCapability.MOVE
+
+    /** An actor exposes its [speed] under the key `"speed"`, on top of its supertypes' stats. */
+    override val stats: Map<String, Moddable> get() = super.stats + ("speed" to speed)
+    //endregion
+
     /**
      * The actor's movement rate in units per tick.
      *
@@ -124,10 +133,17 @@ open class Actor(
             )
         }
 
-    /** Runs the base per-frame work, then applies this tick's [movement]. */
+    /**
+     * Runs the base per-frame work, then - while [CoreCapability.MOVE] is usable - applies
+     * this tick's [movement]. An actor whose move capability is suppressed by a [Buff] holds
+     * position for that tick.
+     */
     override fun onUpdate() {
         super.onUpdate()
-        move().onFailure { cause -> log.error("Actor was not moved this tick.", cause) }
+        if (can(CoreCapability.MOVE))
+            move().onFailure { cause -> log.error("Actor was not moved this tick.", cause) }
+        else
+            log.debug("Actor held in place this tick; its move capability is suppressed.")
     }
 
     /** Performs this tick's movement by delegating to the current [movement] strategy. */

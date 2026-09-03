@@ -17,7 +17,7 @@ import com.spartanlabs.gaming.gameobjects.StatMod.Type
  * @property base the unmodified starting value
  * @property value the current value with every applied [StatMod] folded in
  */
-class ModularStat(var base: Double = 0.0) {
+class ModularStat(var base: Double = 0.0) : Moddable {
 
     //region VALUE
     var value = base
@@ -109,10 +109,10 @@ class ModularStat(var base: Double = 0.0) {
     }
 
     /** Applies [mod] to this stat, recomputing [value] when it takes effect. */
-    fun applyMod(mod: StatMod) = update(::onApplication, mod)
+    override fun applyMod(mod: StatMod) { update(::onApplication, mod) }
 
     /** Removes every applied mod sharing [mod]'s [StatMod.name], recomputing [value] if any were removed. */
-    fun removeMod(mod: StatMod) = update({ removed -> mods.removeAll { it.name == removed.name } }, mod)
+    override fun removeMod(mod: StatMod) { update({ removed -> mods.removeAll { it.name == removed.name } }, mod) }
     //endregion
 }
 

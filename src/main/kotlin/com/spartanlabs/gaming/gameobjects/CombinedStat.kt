@@ -21,7 +21,7 @@ import kotlinx.serialization.Serializable
 data class CombinedStat private constructor(
     val max: ModularStat = ModularStat(0.0),
     var current: Double = max.value,
-) {
+) : Moddable {
 
     //region CONSTRUCTION
     /** Starts the stat at [startingValue] against a ceiling of [maxValue]. */
@@ -90,7 +90,7 @@ data class CombinedStat private constructor(
      * Captures the current fraction of [max], runs [change] against [mod] to alter [max], then
      * moves [current] so that fraction still holds against the new ceiling.
      */
-    private fun respec(change: (StatMod) -> ModularStat, mod: StatMod) {
+    private fun respec(change: (StatMod) -> Unit, mod: StatMod) {
         fractionOfMax.let { fraction ->
             change(mod)
             current = fraction * max
@@ -98,10 +98,10 @@ data class CombinedStat private constructor(
     }
 
     /** Applies [mod] to [max], rescaling [current] to keep its fraction of the ceiling. */
-    fun applyMod(mod: StatMod) = respec(max::applyMod, mod)
+    override fun applyMod(mod: StatMod) = respec(max::applyMod, mod)
 
     /** Removes [mod] from [max], rescaling [current] to keep its fraction of the ceiling. */
-    fun removeMod(mod: StatMod) = respec(max::removeMod, mod)
+    override fun removeMod(mod: StatMod) = respec(max::removeMod, mod)
     //endregion
 }
 

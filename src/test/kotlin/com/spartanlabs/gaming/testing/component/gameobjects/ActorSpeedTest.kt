@@ -5,6 +5,7 @@ package com.spartanlabs.gaming.testing.component.gameobjects
 import com.spartanlabs.geometry.Point
 // 1.2 Spartan Gaming
 import com.spartanlabs.gaming.gameobjects.Actor
+import com.spartanlabs.gaming.gameobjects.Buff
 import com.spartanlabs.gaming.gameobjects.ModularStat
 import com.spartanlabs.gaming.gameobjects.Movement
 import com.spartanlabs.gaming.gameobjects.StatMod
@@ -74,5 +75,29 @@ class ActorSpeedTest {
         actor.tick()
 
         assertEquals(25.0, actor.location.x, absoluteTolerance = 1e-9)
+    }
+
+    @Test
+    fun `a speed buff applied through applyBuff wears off on its own`() {
+        val actor = directionalActor()
+        actor.applyBuff(Buff("haste", durationTicks = 2, statMods = mapOf("speed" to StatMod("haste", 0.5))))
+
+        actor.tick() // +50% -> 15
+        actor.tick() // still +50% this tick, then the buff is pruned
+        assertEquals(30.0, actor.location.x, absoluteTolerance = 1e-9)
+
+        actor.tick() // back to base 10
+        assertEquals(40.0, actor.location.x, absoluteTolerance = 1e-9)
+    }
+
+    @Test
+    fun `a buff that reassigns nothing still tracks a wholesale speed replacement`() {
+        val actor = directionalActor()
+        actor.speed = ModularStat(base = 20.0)
+        actor.applyBuff(Buff("haste", durationTicks = -1, statMods = mapOf("speed" to StatMod("haste", 0.5))))
+
+        actor.tick()
+
+        assertEquals(30.0, actor.location.x, absoluteTolerance = 1e-9) // 20 * 1.5, proving stats[] followed the new object
     }
 }

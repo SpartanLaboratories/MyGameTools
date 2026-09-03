@@ -47,6 +47,23 @@ open class Alive(
 
     /** Probability in `0.0..1.0` that this actor dodges an incoming hit; defaults to `0.0` (never). */
     var evasion: ModularStat = ModularStat(0.0)
+
+    /** An alive adds [CoreCapability.ATTACK] to whatever its supertypes provide. */
+    override val capabilities: Set<Capability> = super.capabilities + CoreCapability.ATTACK
+
+    /**
+     * An alive exposes its health and combat stats for a [Buff] to modify, keyed by name, on
+     * top of its supertypes' stats: `"health"`, `"damage"`, `"attackTime"`, `"attackSpeed"`,
+     * `"attackRange"`, `"evasion"`.
+     */
+    override val stats: Map<String, Moddable> get() = super.stats + mapOf(
+        "health" to health,
+        "damage" to damage,
+        "attackTime" to attackTime,
+        "attackSpeed" to attackSpeed,
+        "attackRange" to attackRange,
+        "evasion" to evasion,
+    )
     //endregion
     //region OWNERSHIP
     /**
@@ -279,13 +296,17 @@ open class Alive(
 
     /**
      * Advances the actor: applies its [deathResponse] if it has just died, refreshes the
-     * [healthBar]'s position and width, then runs one tick of any pending attack.
+     * [healthBar]'s position and width, then - while [CoreCapability.ATTACK] is usable - runs
+     * one tick of any pending attack. An alive whose attack capability is suppressed by a
+     * [Buff] keeps its attack order but its swing progress is frozen until the suppression
+     * lifts; death handling and the health bar are unaffected.
      */
     override fun onUpdate() {
         super.onUpdate()
         contemplateLife()
         updateHealthBar()
-        considerAttack()
+        if (can(CoreCapability.ATTACK)) considerAttack()
+        else log.debug("An Alive's attack is frozen this tick; its attack capability is suppressed.")
     }
     //endregion
 
