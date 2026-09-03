@@ -1,0 +1,22 @@
+# Normalize line endings: LF in the repository, checked out native on Windows.
+* text=auto eol=lf
+
+# Scripts must keep their platform's endings to stay executable.
+*.bat        text eol=crlf
+*.cmd        text eol=crlf
+gradlew      text eol=lf
+*.sh         text eol=lf
+
+# Gradle wrapper jar and other binaries.
+*.jar        binary
+*.png        binary
+*.jpg        binary
+*.jpeg       binary
+*.gif        binary
+*.ico        binary
+*.zip        binary
+
+# Keep generated/vendored files out of diffs and language stats.
+gradlew      linguist-vendored
+gradlew.bat  linguist-vendored
+Writerside/** linguist-documentation
