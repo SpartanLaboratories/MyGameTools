@@ -1,0 +1,29 @@
+# https://editorconfig.org — shared editor defaults for this repo.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+max_line_length = 120
+
+[*.{kt,kts}]
+# Kotlin official style (matches gradle.properties kotlin.code.style=official
+# and .aiassistant/rules/CLAUDE.md).
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+
+[*.{yml,yaml,json}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[{Makefile,*.bat,*.cmd}]
+indent_style = tab
+
+[*.bat]
+end_of_line = crlf

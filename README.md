@@ -4,6 +4,7 @@
 
 **A batteries-included Kotlin engine layer for 2D multiplayer games — game objects, stats, spatial indexing, and UDP networking, out of the box.**
 
+[![CI](https://github.com/SpartanLaboratories/MyGameTools/actions/workflows/ci.yml/badge.svg)](https://github.com/SpartanLaboratories/MyGameTools/actions/workflows/ci.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.spartanlaboratories/GameTools?label=Maven%20Central&color=blue)](https://central.sonatype.com/artifact/io.github.spartanlaboratories/GameTools)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2.0-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -270,9 +271,16 @@ API documentation is generated with [Dokka](https://kotlinlang.org/docs/dokka-in
 
 ---
 
+## 🤝 Contributing
+
+Development workflow, branching model, commit conventions, and the release process are in
+[CONTRIBUTING.md](CONTRIBUTING.md). Release history is in [CHANGELOG.md](CHANGELOG.md).
+
+---
+
 ## 📄 License
 
-Licensed under the **Apache License, Version 2.0**. See [LICENSE](http://www.apache.org/licenses/LICENSE-2.0.txt) for details.
+Licensed under the **Apache License, Version 2.0**. See [LICENSE](LICENSE) for details.
 
 ---
 

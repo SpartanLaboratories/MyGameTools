@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  fast-tests:
+    name: Fast tests (component + deterministic)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "23"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew componentTest deterministicTest --stacktrace
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-test-reports
+          path: build/reports/tests/
+
+  integration-tests:
+    name: Integration tests (integration + e2e + nonfunctional)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "23"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew integrationTest e2eTest nonfunctionalTest --stacktrace
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-reports
+          path: build/reports/tests/
+
+  docs:
+    name: API docs (Dokka)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "23"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew dokkaGeneratePublicationHtml --stacktrace
+
+  assemble:
+    name: Assemble
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "23"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew assemble --stacktrace
