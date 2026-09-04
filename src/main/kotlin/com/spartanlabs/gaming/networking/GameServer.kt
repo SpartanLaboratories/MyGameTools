@@ -3,7 +3,7 @@ package com.spartanlabs.gaming.networking
 //region 1. Organization Internal
 // 1.1 Spartan Laboratories
 import com.spartanlabs.webtools.MultiConnectionUDPServer
-import com.spartanlabs.webtools.UDPConnection
+import com.spartanlabs.webtools.Connection
 // 1.2 Spartan Gaming
 import com.spartanlabs.gaming.gameobjects.DrawableSnapshot
 import com.spartanlabs.gaming.gameobjects.VisibleObject
@@ -29,10 +29,11 @@ private val log: Logger = LoggerFactory.getLogger("GameServer")
  * A [MultiConnectionUDPServer] that speaks the game's protocol.
  *
  * The base class does all of the socket work: it listens on
- * [MultiConnectionUDPServer.COMMON_LISTEN_PORT] for `Iam <name> <address>` handshakes,
- * allocates each client a dedicated port pair, replies with `TXRXON <sendPort> <receivePort>`
- * and then calls [onClientConnect]. This class supplies the game-specific half of that
- * contract:
+ * [MultiConnectionUDPServer.COMMON_LISTEN_PORT] for `Iam <name>` handshakes (a trailing
+ * address token is accepted but ignored), allocates each client a dedicated port pair,
+ * replies - from that same common socket, straight back to the datagram's source address and
+ * port - with a bare `TXRXON <sendPort> <receivePort>` and then calls [onClientConnect]. This
+ * class supplies the game-specific half of that contract:
  *
  * - it accepts at most [maxConnections] players and refuses the rest,
  * - it starts listening on every accepted player's dedicated connection and routes their
@@ -43,7 +44,7 @@ private val log: Logger = LoggerFactory.getLogger("GameServer")
  *
  * Construction starts the server: the base class spawns its handshake thread from its own
  * `init` block, so players may begin connecting as soon as the constructor returns. Only one
- * instance can exist per JVM at a time, since the common ports are fixed - construct a second
+ * instance can exist per JVM at a time, since the common port is fixed - construct a second
  * one before calling [shutDown] on the first and the bind will fail.
  *
  * @property maxConnections the largest number of players allowed on the server at once
@@ -68,7 +69,7 @@ class GameServer(
      * Concurrent because it is written from the base class's handshake thread while the game
      * thread reads it to [broadcast] and [push].
      */
-    private val players = ConcurrentHashMap<String, UDPConnection>()
+    private val players = ConcurrentHashMap<String, Connection>()
 
     /** How many players are connected right now. */
     val playerCount: Int get() = players.size
@@ -88,7 +89,7 @@ class GameServer(
      *
      * @param connection the connection the base class just registered
      */
-    override fun onClientConnect(connection: UDPConnection) {
+    override fun onClientConnect(connection: Connection) {
         admit(connection)
             .andThen { admitted -> listenTo(admitted) }
             .onFailure { cause ->
@@ -110,7 +111,7 @@ class GameServer(
      * @param connection the connection the base class just registered
      * @return the admitted connection, or [Result.failure] carrying the reason it was refused
      */
-    private fun admit(connection: UDPConnection): Result<UDPConnection> = when {
+    private fun admit(connection: Connection): Result<Connection> = when {
         !isFullyConstructed ->
             Result.failure(IllegalStateException("it handshook before the server finished starting up"))
 
@@ -127,7 +128,7 @@ class GameServer(
      * @param connection the connection [admit] accepted
      * @return [Result.success] once the player is being listened to, or the failure that prevented it
      */
-    private fun listenTo(connection: UDPConnection): Result<Unit> {
+    private fun listenTo(connection: Connection): Result<Unit> {
         players.put(connection.name, connection)?.let { stale ->
             log.info("'{}' reconnected, terminating their previous connection", connection.name)
             stale.terminate()
@@ -215,8 +216,8 @@ class GameServer(
     /**
      * Sends a message to every connected player on their own dedicated connection.
      *
-     * This is not the inherited [pushToAll], which sends to each client's address on the
-     * common handshake port; this uses the private port pair each player was handed.
+     * This is not the inherited [pushToAll], which sends to each client's handshake origin
+     * over the common socket; this uses the private port pair each player was handed.
      *
      * @param message the text to send to all players
      * @return [Result.success] if the message reached every player, or the first failure encountered
