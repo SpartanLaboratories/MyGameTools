@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
  * Owns the [GameServer] under test together with every socket the fake clients opened
  * against it, and tears all of them down again afterwards.
  *
- * Teardown is not optional housekeeping: a [GameServer] binds the fixed common ports in its
+ * Teardown is not optional housekeeping: a [GameServer] binds the fixed common port in its
  * constructor, so a test class that leaves one running makes every later test class fail to
  * start one. Each test therefore closes its fixture in an `@AfterTest`.
  */

@@ -10,11 +10,9 @@ import java.net.InetAddress
  * The client end of a single player's dedicated connection, once the handshake has handed
  * out a [ServerPorts] pair.
  *
- * Only one of these can exist per server: the port allocation in `MultiConnectionUDPServer`
- * steps by one rather than two, so a second player's [ServerPorts.serverSendPort] is the same
- * number as the first player's [ServerPorts.serverReceivePort], which the server itself is
- * already bound to on this host. Tests that need several players therefore handshake them but
- * only open a channel for one.
+ * One of these per handshaken player. 2.0.0b allocates each registration a `(send, receive)`
+ * pair two below the previous, so a second player's ports never collide with the first's -
+ * several channels can be open at once.
  *
  * @param ports the dedicated ports the server allocated to this player
  */

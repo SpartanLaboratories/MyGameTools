@@ -19,9 +19,11 @@ import org.slf4j.LoggerFactory
 /**
  * Drives the client half of the [GameServer] handshake protocol over real sockets.
  *
- * The harness owns the single socket bound to the common send port, so exactly one of these
- * exists per test even when several fake players handshake - every reply for this host lands
- * on that one socket regardless of which player it is addressed to.
+ * The harness owns one socket, so it is exactly one handshake origin. A second [handshake]
+ * on the same harness is seen by the server as a retransmit from a known origin: it repeats
+ * the first reply and registers nothing new. Tests that need several distinct players create
+ * several harnesses (`fixture.client()` per player). Multiple harnesses can coexist because
+ * each binds an ephemeral port, not the old fixed one.
  *
  * Everything happens over the loopback address, so the tests neither need a network nor
  * disturb one.
@@ -31,8 +33,9 @@ internal class FakeClientHarness : AutoCloseable {
     /** The address fake players claim to live at, and where replies are delivered. */
     val address: InetAddress = InetAddress.getLoopbackAddress()
 
-    /** Bound to the common send port, where the server delivers its `TXRXON` replies. */
-    private val replies = DatagramSocket(MultiConnectionUDPServer.COMMON_SEND_PORT)
+    /** The one socket this fake client sends its `Iam` from and reads every reply on.
+     *  Its local port is the handshake origin the server keys this client by. */
+    private val socket = DatagramSocket()
 
     /**
      * Performs a full `Iam` handshake for [name] and reads back the dedicated ports.
@@ -47,55 +50,53 @@ internal class FakeClientHarness : AutoCloseable {
      */
     fun handshake(name: String, timeoutMillis: Int = REPLY_TIMEOUT_MILLIS): Result<ServerPorts> {
         log.info("Fake client '{}' is handshaking", name)
-        return push("$HANDSHAKE_VERB $name ${address.hostAddress}")
+        return push("$HANDSHAKE_VERB $name")
             .andThen { awaitReply(timeoutMillis) }
             .andThen(::parseReply)
     }
 
     /**
-     * Reads the next message the server sends to the common send port.
+     * Reads the next message the server sends back to this harness's socket.
      * @param timeoutMillis how long to wait before giving up
      * @return the decoded message, or the failure that prevented reading one
      */
     fun awaitReply(timeoutMillis: Int = REPLY_TIMEOUT_MILLIS): Result<String> = runCatching {
-        replies.soTimeout = timeoutMillis
+        socket.soTimeout = timeoutMillis
         val packet = DatagramPacket(ByteArray(BUFFER_BYTES), BUFFER_BYTES)
-        replies.receive(packet)
+        socket.receive(packet)
         String(packet.data, 0, packet.length, Charsets.UTF_8).trim()
             .also { reply -> log.debug("Fake client received '{}'", reply) }
     }
 
     /**
-     * Sends a datagram to the server's common listen port.
+     * Sends a datagram to the server's common listen port from this harness's socket.
      * @param message the text to send
      * @return [Result.success] if the datagram was sent, or the failure that prevented it
      */
     private fun push(message: String): Result<Unit> = runCatching {
-        DatagramSocket().use { socket ->
-            message.toByteArray(Charsets.UTF_8).let { payload ->
-                socket.send(
-                    DatagramPacket(payload, payload.size, address, MultiConnectionUDPServer.COMMON_LISTEN_PORT)
-                )
-            }
+        message.toByteArray(Charsets.UTF_8).let { payload ->
+            socket.send(
+                DatagramPacket(payload, payload.size, address, MultiConnectionUDPServer.COMMON_LISTEN_PORT)
+            )
         }
     }
 
     /**
-     * Pulls the dedicated port pair out of a `<address> TXRXON <sendPort> <receivePort>` reply.
+     * Pulls the dedicated port pair out of a bare `TXRXON <sendPort> <receivePort>` reply.
      * @param reply the raw reply text
      * @return the parsed ports, or [Result.failure] if the reply was not a well-formed `TXRXON`
      */
     private fun parseReply(reply: String): Result<ServerPorts> = runCatching {
         val tokens = reply.split(' ')
         require(tokens.size > RECEIVE_PORT_INDEX && tokens[VERB_INDEX] == HANDSHAKE_REPLY_VERB) {
-            "Expected '<address> $HANDSHAKE_REPLY_VERB <sendPort> <receivePort>' but got '$reply'"
+            "Expected '$HANDSHAKE_REPLY_VERB <sendPort> <receivePort>' but got '$reply'"
         }
         ServerPorts(tokens[SEND_PORT_INDEX].toInt(), tokens[RECEIVE_PORT_INDEX].toInt())
     }
 
-    /** Releases the common send port so the next test can bind it. */
+    /** Releases the socket so the next test can bind it. */
     override fun close() {
-        replies.close()
+        socket.close()
     }
 
     companion object {
@@ -108,14 +109,14 @@ internal class FakeClientHarness : AutoCloseable {
         /** The verb the server answers a handshake with. */
         private const val HANDSHAKE_REPLY_VERB = "TXRXON"
 
-        /** Index of the verb within a split reply, which is preceded by the echoed address. */
-        private const val VERB_INDEX = 1
+        /** Index of the verb within a split bare reply. */
+        private const val VERB_INDEX = 0
 
         /** Index of the server's send port within a split reply. */
-        private const val SEND_PORT_INDEX = 2
+        private const val SEND_PORT_INDEX = 1
 
         /** Index of the server's receive port within a split reply. */
-        private const val RECEIVE_PORT_INDEX = 3
+        private const val RECEIVE_PORT_INDEX = 2
 
         /** How long to wait for a handshake reply before declaring the handshake failed. */
         private const val REPLY_TIMEOUT_MILLIS = 4000
