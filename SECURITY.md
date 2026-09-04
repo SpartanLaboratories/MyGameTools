@@ -3,7 +3,7 @@
 ## Supported versions
 
 Only the latest released version of GameTools receives fixes. Upgrade to the newest
-`io.github.spartanlaboratories:GameTools` before reporting.
+`io.github.spartanlabsgaming:GameTools` before reporting.
 
 ## Reporting a vulnerability
 

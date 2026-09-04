@@ -58,6 +58,6 @@ Apply these strict rules to all code generation, refactoring, and test design.
 * Always Clean up unused imports
 
 ## 6. Version Nomenclature
-* Both when reading libraries from group "io.github.spartanlaboratories" and when declaring this library for publishing
+* Both when reading libraries from group "io.github.spartanlaboratories" (WebTools, GeneralTools) and when declaring this library for publishing (group "io.github.spartanlabsgaming")
 * use the following nomenclature for the version "MajorRelease.FeatureRelease.MinorChange" followed by a letter indicating a bug fix
 * For example if the version number is currently 1.3.5b and I say to bump the version feature release you will change it to 1.4.0

@@ -5,7 +5,7 @@
 **A batteries-included Kotlin engine layer for 2D multiplayer games — game objects, stats, spatial indexing, and UDP networking, out of the box.**
 
 [![CI](https://github.com/SpartanLabsGaming/MyGameTools/actions/workflows/ci.yml/badge.svg)](https://github.com/SpartanLabsGaming/MyGameTools/actions/workflows/ci.yml)
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.spartanlaboratories/GameTools?label=Maven%20Central&color=blue)](https://central.sonatype.com/artifact/io.github.spartanlaboratories/GameTools)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.spartanlabsgaming/GameTools?label=Maven%20Central&color=blue)](https://central.sonatype.com/artifact/io.github.spartanlabsgaming/GameTools)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2.0-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 [![Docs](https://img.shields.io/badge/docs-Dokka-orange)](https://github.com/SpartanLabsGaming/MyGameTools)
@@ -16,7 +16,7 @@
 
 ## 📖 Overview
 
-**GameTools** (module `io.github.spartanlaboratories:GameTools`) is a Kotlin/JVM library that supplies the reusable plumbing every simple 2D game engine needs so you can spend your time on gameplay instead of infrastructure:
+**GameTools** (module `io.github.spartanlabsgaming:GameTools`) is a Kotlin/JVM library that supplies the reusable plumbing every simple 2D game engine needs so you can spend your time on gameplay instead of infrastructure:
 
 - A **game-object hierarchy** — position, rendering, movement, combat, and ownership — built as small, composable layers rather than one giant class.
 - A **stat system** (`ModularStat` / `CombinedStat` / `StatMod`) for buffs, debuffs, and resource bars (health, mana, stamina...) with proper additive/multiplicative stacking.
@@ -149,21 +149,21 @@ GameTools is published to **Maven Central**.
 **Gradle (Kotlin DSL)**
 ```kotlin
 dependencies {
-    implementation("io.github.spartanlaboratories:GameTools:2.0.0")
+    implementation("io.github.spartanlabsgaming:GameTools:2.0.0")
 }
 ```
 
 **Gradle (Groovy DSL)**
 ```groovy
 dependencies {
-    implementation 'io.github.spartanlaboratories:GameTools:2.0.0'
+    implementation 'io.github.spartanlabsgaming:GameTools:2.0.0'
 }
 ```
 
 **Maven**
 ```xml
 <dependency>
-    <groupId>io.github.spartanlaboratories</groupId>
+    <groupId>io.github.spartanlabsgaming</groupId>
     <artifactId>GameTools</artifactId>
     <version>2.0.0</version>
 </dependency>
