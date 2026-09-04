@@ -4,11 +4,11 @@
 
 **A batteries-included Kotlin engine layer for 2D multiplayer games — game objects, stats, spatial indexing, and UDP networking, out of the box.**
 
-[![CI](https://github.com/SpartanLaboratories/MyGameTools/actions/workflows/ci.yml/badge.svg)](https://github.com/SpartanLaboratories/MyGameTools/actions/workflows/ci.yml)
+[![CI](https://github.com/SpartanLabsGaming/MyGameTools/actions/workflows/ci.yml/badge.svg)](https://github.com/SpartanLabsGaming/MyGameTools/actions/workflows/ci.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.spartanlaboratories/GameTools?label=Maven%20Central&color=blue)](https://central.sonatype.com/artifact/io.github.spartanlaboratories/GameTools)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2.0-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
-[![Docs](https://img.shields.io/badge/docs-Dokka-orange)](https://github.com/SpartanLaboratories/MyGameTools)
+[![Docs](https://img.shields.io/badge/docs-Dokka-orange)](https://github.com/SpartanLabsGaming/MyGameTools)
 
 </div>
 
@@ -149,14 +149,14 @@ GameTools is published to **Maven Central**.
 **Gradle (Kotlin DSL)**
 ```kotlin
 dependencies {
-    implementation("io.github.spartanlaboratories:GameTools:1.8.0")
+    implementation("io.github.spartanlaboratories:GameTools:2.0.0")
 }
 ```
 
 **Gradle (Groovy DSL)**
 ```groovy
 dependencies {
-    implementation 'io.github.spartanlaboratories:GameTools:1.8.0'
+    implementation 'io.github.spartanlaboratories:GameTools:2.0.0'
 }
 ```
 
@@ -165,7 +165,7 @@ dependencies {
 <dependency>
     <groupId>io.github.spartanlaboratories</groupId>
     <artifactId>GameTools</artifactId>
-    <version>1.8.0</version>
+    <version>2.0.0</version>
 </dependency>
 ```
 
