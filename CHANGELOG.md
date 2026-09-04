@@ -18,6 +18,16 @@ bug-fix release. Releases are tagged `vX.Y.Z` and published to
   version are unchanged; consumers must update their dependency coordinates. The
   old coordinates receive no further releases. `WebTools` and `GeneralTools`
   continue to resolve from `io.github.spartanlaboratories`.
+- **BREAKING — GameServer wire protocol (WebTools 2.0.0c).** The handshake reply is now the
+  bare token `REGISTERED` (was `TXRXON <sendPort> <receivePort>`). Players no longer get a
+  dedicated UDP port pair - every player's traffic (application data, `STATE`/`INPUT`
+  messages, and broadcasts) is multiplexed over the single shared handshake socket
+  (`MultiConnectionUDPServer.COMMON_LISTEN_PORT`). A player must send the bare token `KA` on
+  that same socket roughly every 20s to keep its NAT mapping warm; the server consumes it
+  silently and never routes it to `onPlayerMessage` / `onPlayerInput`.
+
+### Dependencies
+- WebTools `2.0.0b` → `2.0.0c`.
 
 ## [2.0.0] — 2026-09-04
 

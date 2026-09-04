@@ -17,13 +17,14 @@ import org.slf4j.LoggerFactory
 //endregion
 
 /**
- * Drives the client half of the [GameServer] handshake protocol over real sockets.
- *
- * The harness owns one socket, so it is exactly one handshake origin. A second [handshake]
- * on the same harness is seen by the server as a retransmit from a known origin: it repeats
- * the first reply and registers nothing new. Tests that need several distinct players create
- * several harnesses (`fixture.client()` per player). Multiple harnesses can coexist because
- * each binds an ephemeral port, not the old fixed one.
+ * Drives the client half of the [GameServer] handshake and every subsequent exchange over
+ * real loopback sockets. Under WebTools 2.0.0c there is one socket per client for the whole
+ * session - the same one `Iam` was sent from also carries application data, broadcasts, and
+ * `KA` keepalives both ways - so this harness is both the handshake driver and the data
+ * channel a `FakePlayerChannel` used to be. The harness owns one socket, so it is exactly one
+ * handshake origin; a second [handshake] on the same harness is seen by the server as a
+ * retransmit and repeats the first reply rather than registering anything new. Tests that need
+ * several distinct players create several harnesses (`fixture.client()` per player).
  *
  * Everything happens over the loopback address, so the tests neither need a network nor
  * disturb one.
@@ -38,7 +39,7 @@ internal class FakeClientHarness : AutoCloseable {
     private val socket = DatagramSocket()
 
     /**
-     * Performs a full `Iam` handshake for [name] and reads back the dedicated ports.
+     * Performs a full `Iam` handshake for [name] and confirms the server replied `REGISTERED`.
      *
      * Note that a successful result only proves the server replied - it is sent before the
      * server admits the player, so callers that care about the roster must wait for it
@@ -46,21 +47,22 @@ internal class FakeClientHarness : AutoCloseable {
      *
      * @param name the player name to handshake under
      * @param timeoutMillis how long to wait for the reply
-     * @return the ports the server allocated, or the failure that prevented the handshake
+     * @return [Result.success] if the server replied `REGISTERED`, or the failure that prevented it
      */
-    fun handshake(name: String, timeoutMillis: Int = REPLY_TIMEOUT_MILLIS): Result<ServerPorts> {
+    fun handshake(name: String, timeoutMillis: Int = REPLY_TIMEOUT_MILLIS): Result<Unit> {
         log.info("Fake client '{}' is handshaking", name)
-        return push("$HANDSHAKE_VERB $name")
-            .andThen { awaitReply(timeoutMillis) }
+        return send("$HANDSHAKE_VERB $name")
+            .andThen { receive(timeoutMillis) }
             .andThen(::parseReply)
     }
 
     /**
-     * Reads the next message the server sends back to this harness's socket.
+     * Reads the next datagram addressed back to this harness's socket - a handshake reply, a
+     * pushed message, or a broadcast.
      * @param timeoutMillis how long to wait before giving up
      * @return the decoded message, or the failure that prevented reading one
      */
-    fun awaitReply(timeoutMillis: Int = REPLY_TIMEOUT_MILLIS): Result<String> = runCatching {
+    fun receive(timeoutMillis: Int = REPLY_TIMEOUT_MILLIS): Result<String> = runCatching {
         socket.soTimeout = timeoutMillis
         val packet = DatagramPacket(ByteArray(BUFFER_BYTES), BUFFER_BYTES)
         socket.receive(packet)
@@ -69,11 +71,12 @@ internal class FakeClientHarness : AutoCloseable {
     }
 
     /**
-     * Sends a datagram to the server's common listen port from this harness's socket.
+     * Sends a datagram to the server's common port from this harness's socket - the same
+     * socket every reply, broadcast, and push to this client arrives on.
      * @param message the text to send
      * @return [Result.success] if the datagram was sent, or the failure that prevented it
      */
-    private fun push(message: String): Result<Unit> = runCatching {
+    fun send(message: String): Result<Unit> = runCatching {
         message.toByteArray(Charsets.UTF_8).let { payload ->
             socket.send(
                 DatagramPacket(payload, payload.size, address, MultiConnectionUDPServer.COMMON_LISTEN_PORT)
@@ -82,16 +85,19 @@ internal class FakeClientHarness : AutoCloseable {
     }
 
     /**
-     * Pulls the dedicated port pair out of a bare `TXRXON <sendPort> <receivePort>` reply.
-     * @param reply the raw reply text
-     * @return the parsed ports, or [Result.failure] if the reply was not a well-formed `TXRXON`
+     * Sends a bare `KA` keepalive datagram from this harness's socket, one-shot - mirrors
+     * [com.spartanlabs.webtools.Connection.keepAlive]'s own one-shot contract.
+     * @return [Result.success] if the datagram was sent, or the failure that prevented it
      */
-    private fun parseReply(reply: String): Result<ServerPorts> = runCatching {
-        val tokens = reply.split(' ')
-        require(tokens.size > RECEIVE_PORT_INDEX && tokens[VERB_INDEX] == HANDSHAKE_REPLY_VERB) {
-            "Expected '$HANDSHAKE_REPLY_VERB <sendPort> <receivePort>' but got '$reply'"
-        }
-        ServerPorts(tokens[SEND_PORT_INDEX].toInt(), tokens[RECEIVE_PORT_INDEX].toInt())
+    fun sendKeepAlive(): Result<Unit> = send(KEEPALIVE_TOKEN)
+
+    /**
+     * Confirms a handshake reply was the bare token `REGISTERED`.
+     * @param reply the raw reply text
+     * @return [Result.success], or [Result.failure] if the reply was not `REGISTERED`
+     */
+    private fun parseReply(reply: String): Result<Unit> = runCatching {
+        require(reply == HANDSHAKE_REPLY_VERB) { "Expected '$HANDSHAKE_REPLY_VERB' but got '$reply'" }
     }
 
     /** Releases the socket so the next test can bind it. */
@@ -106,17 +112,11 @@ internal class FakeClientHarness : AutoCloseable {
         /** The verb that opens a client handshake. */
         private const val HANDSHAKE_VERB = "Iam"
 
-        /** The verb the server answers a handshake with. */
-        private const val HANDSHAKE_REPLY_VERB = "TXRXON"
+        /** The bare token the server answers a handshake with. */
+        private const val HANDSHAKE_REPLY_VERB = "REGISTERED"
 
-        /** Index of the verb within a split bare reply. */
-        private const val VERB_INDEX = 0
-
-        /** Index of the server's send port within a split reply. */
-        private const val SEND_PORT_INDEX = 1
-
-        /** Index of the server's receive port within a split reply. */
-        private const val RECEIVE_PORT_INDEX = 2
+        /** The bare token a client sends to keep its NAT mapping warm. */
+        private const val KEEPALIVE_TOKEN = "KA"
 
         /** How long to wait for a handshake reply before declaring the handshake failed. */
         private const val REPLY_TIMEOUT_MILLIS = 4000

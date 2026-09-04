@@ -10,7 +10,6 @@ import com.spartanlabs.gaming.networking.GameServer
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 //endregion
 
@@ -35,33 +34,6 @@ class GameServerHandshakeTest {
     }
 
     @Test
-    fun `the handshake reply hands out a distinct dedicated port pair`() {
-        fixture.startServer(maxConnections = 4)
-
-        val ports = fixture.client().handshake("alice").getOrThrow()
-
-        assertTrue(ports.serverSendPort > 0, "send port should be a real port")
-        assertTrue(ports.serverReceivePort > 0, "receive port should be a real port")
-        assertNotEquals(
-            ports.serverSendPort,
-            ports.serverReceivePort,
-            "a player cannot be sent to and listened to on one port"
-        )
-    }
-
-    @Test
-    fun `each player is handed its own port pair`() {
-        fixture.startServer(maxConnections = 4)
-
-        val first = fixture.client().handshake("alice").getOrThrow()
-        val second = fixture.client().handshake("bob").getOrThrow()
-
-        assertEquals(9996, first.serverReceivePort, "the first registration's receive port")
-        assertEquals(9994, second.serverReceivePort, "the second registration's receive port")
-        assertNotEquals(first.serverReceivePort, second.serverReceivePort, "ports must not be reused")
-    }
-
-    @Test
     fun `reconnecting under the same name from a new origin does not count twice`() {
         val server = fixture.startServer(maxConnections = 4)
 
@@ -79,14 +51,13 @@ class GameServerHandshakeTest {
         val server = fixture.startServer(maxConnections = 4)
         val client = fixture.client()
 
-        val first = client.handshake("alice").getOrThrow()
+        assertTrue(client.handshake("alice").isSuccess)
         assertTrue(fixture.awaitPlayers(expected = 1))
-        val second = client.handshake("alice").getOrThrow()
+        assertTrue(client.handshake("alice").isSuccess)
         fixture.settle()
 
         assertEquals(1, server.playerCount, "a retransmit registers nothing new")
         assertEquals(setOf("alice"), server.playerNames)
-        assertEquals(first, second, "the server repeats the first reply")
     }
 
     @Test

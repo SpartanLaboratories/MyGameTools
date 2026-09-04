@@ -21,7 +21,7 @@
 - A **game-object hierarchy** — position, rendering, movement, combat, and ownership — built as small, composable layers rather than one giant class.
 - A **stat system** (`ModularStat` / `CombinedStat` / `StatMod`) for buffs, debuffs, and resource bars (health, mana, stamina...) with proper additive/multiplicative stacking.
 - A **quadtree spatial index** for fast proximity queries, used internally for collision and homing behavior.
-- A **UDP `GameServer`** built on top of Spartan Laboratories' `WebTools`, handling client handshakes, per-player ports, input decoding, and JSON world-state broadcast.
+- A **UDP `GameServer`** built on top of Spartan Laboratories' `WebTools`, handling client handshakes, a single shared multiplexed socket, input decoding, and JSON world-state broadcast.
 - **Serializable snapshots** for every drawable object, ready to send over the wire as JSON.
 
 It's the framework that powers Spartan Laboratories' own game projects, extracted so it can be reused (and improved) independently.
@@ -113,7 +113,7 @@ classDiagram
 | `Player` | final | Owns a roster of `Alive` actors and tracks which are still living |
 | `World` | final | Owns every `GameObject`, rebuilds the `Quadtree` each frame, and drives the tick loop |
 | `Quadtree<N, E>` | generic | Point-region spatial index for fast broad-phase proximity queries |
-| `GameServer` | final | UDP transport: handshakes, per-player ports, input decoding, JSON broadcast |
+| `GameServer` | final | UDP transport: handshakes, a single shared multiplexed socket, input decoding, JSON broadcast |
 
 ---
 
@@ -134,7 +134,7 @@ classDiagram
 - A generic **point-region `Quadtree<N, E>`** used as the broad phase for collision and homing lookups — rebuilt once per frame by `World.tick()` so every object's own tick sees a consistent index.
 
 ### 🌐 Networking
-- `GameServer`, built on Spartan Laboratories' `WebTools` `MultiConnectionUDPServer`: handles the `Iam <name>` handshake (NAT-traversable as of WebTools 2.0.0b), allocates each client a dedicated send/receive port pair, decodes `INPUT` datagrams into structured `MouseAction` events, routes everything else to your own callback, and enforces a configurable max player count.
+- `GameServer`, built on Spartan Laboratories' `WebTools` `MultiConnectionUDPServer`: handles the `Iam <name>` handshake, replies with the bare token `REGISTERED`, and multiplexes every player's traffic - application data, broadcasts, and keepalives - over one shared socket (NAT-traversable end to end as of WebTools 2.0.0c), decodes `INPUT` datagrams into structured `MouseAction` events, routes everything else to your own callback, and enforces a configurable max player count. Callers are responsible for sending a bare `KA` token on that same socket roughly every 20s to keep their NAT mapping warm.
 - `MouseAction` — a serializable, typed representation of mouse `MOVE` / `PRESS` / `RELEASE` events in window pixel coordinates.
 
 ### 🧮 Geometry Serialization
@@ -242,7 +242,7 @@ Tests are organized into a **five-level hierarchy** under `com.spartanlabs.gamin
 ./gradlew integrationTest   # networking integration tests
 ```
 
-Because a `GameServer` binds fixed common UDP ports, any test task that starts one acquires a shared, single-permit Gradle build service so port-binding tasks never run concurrently.
+Because a `GameServer` binds a fixed common UDP port, any test task that starts one acquires a shared, single-permit Gradle build service so port-binding tasks never run concurrently.
 
 ---
 

@@ -44,10 +44,10 @@ class GameServerInputTest {
 
     @Test
     fun `an INPUT datagram is decoded into a MouseAction for the sending player`() {
-        val channel = channelFor("alice")
+        val (client, _) = connectedClient("alice")
         val action = MouseAction(MouseActionType.PRESS, button = 0, x = 12.0, y = 34.0)
 
-        assertTrue(channel.send(GameServer.inputMessage(action)).isSuccess)
+        assertTrue(client.send(GameServer.inputMessage(action)).isSuccess)
 
         assertEquals("alice" to action, fixture.awaitPlayerInput())
         assertNull(fixture.awaitPlayerMessage(NEGATIVE_TIMEOUT_MILLIS), "INPUT must not also fire onPlayerMessage")
@@ -55,9 +55,9 @@ class GameServerInputTest {
 
     @Test
     fun `a malformed INPUT payload is dropped rather than reaching either callback`() {
-        val channel = channelFor("alice")
+        val (client, _) = connectedClient("alice")
 
-        assertTrue(channel.send("${GameServer.INPUT_VERB} not-json").isSuccess)
+        assertTrue(client.send("${GameServer.INPUT_VERB} not-json").isSuccess)
 
         assertNull(fixture.awaitPlayerInput(NEGATIVE_TIMEOUT_MILLIS), "a payload that will not parse must be dropped")
         assertNull(fixture.awaitPlayerMessage(NEGATIVE_TIMEOUT_MILLIS), "a malformed INPUT must not fall through to onPlayerMessage")
@@ -65,20 +65,32 @@ class GameServerInputTest {
 
     @Test
     fun `a non-INPUT datagram is passed verbatim to onPlayerMessage`() {
-        val channel = channelFor("alice")
+        val (client, _) = connectedClient("alice")
 
-        assertTrue(channel.send("CHAT hello there").isSuccess)
+        assertTrue(client.send("CHAT hello there").isSuccess)
 
         assertEquals("alice" to "CHAT hello there", fixture.awaitPlayerMessage())
         assertNull(fixture.awaitPlayerInput(NEGATIVE_TIMEOUT_MILLIS), "a non-INPUT message must not fire onPlayerInput")
     }
 
-    /** Handshakes [name], waits for the roster to catch up, and opens their dedicated channel. */
-    private fun channelFor(name: String): FakePlayerChannel {
-        fixture.startServer(maxConnections = 4)
-        val ports = fixture.client().handshake(name).getOrThrow()
+    @Test
+    fun `a keepalive datagram from a player is swallowed rather than reaching onPlayerMessage`() {
+        val (client, server) = connectedClient("alice")
+
+        assertTrue(client.sendKeepAlive().isSuccess)
+
+        assertNull(fixture.awaitPlayerMessage(NEGATIVE_TIMEOUT_MILLIS), "KA must never reach onPlayerMessage")
+        assertNull(fixture.awaitPlayerInput(NEGATIVE_TIMEOUT_MILLIS), "KA must never reach onPlayerInput")
+        assertEquals(1, server.playerCount, "a keepalive must not affect the roster")
+    }
+
+    /** Handshakes [name] against a freshly started server and waits for the roster to catch up. */
+    private fun connectedClient(name: String): Pair<FakeClientHarness, GameServer> {
+        val server = fixture.startServer(maxConnections = 4)
+        val client = fixture.client()
+        assertTrue(client.handshake(name).isSuccess)
         assertTrue(fixture.awaitPlayers(expected = 1), "the player was never admitted")
-        return fixture.channel(ports)
+        return client to server
     }
 
     companion object {

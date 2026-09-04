@@ -27,9 +27,6 @@ internal class ServerFixture : AutoCloseable {
     /** Every harness handed out by [client], closed in [close]. */
     private val harnesses = mutableListOf<FakeClientHarness>()
 
-    /** Every channel handed out by [channel], closed in [close]. */
-    private val channels = mutableListOf<FakePlayerChannel>()
-
     /** Every `(player, message)` pair the server reported, in arrival order. */
     private val playerMessages = LinkedBlockingQueue<Pair<String, String>>()
 
@@ -52,13 +49,6 @@ internal class ServerFixture : AutoCloseable {
 
     /** @return a fake client harness that will be closed with this fixture */
     fun client(): FakeClientHarness = FakeClientHarness().also { harness -> harnesses.add(harness) }
-
-    /**
-     * @param ports the dedicated ports a handshake handed out
-     * @return a dedicated channel for those ports that will be closed with this fixture
-     */
-    fun channel(ports: ServerPorts): FakePlayerChannel =
-        FakePlayerChannel(ports).also { channel -> channels.add(channel) }
 
     /**
      * Waits for the server's roster to reach [expected].
@@ -100,9 +90,8 @@ internal class ServerFixture : AutoCloseable {
     fun awaitPlayerInput(timeoutMillis: Long = MESSAGE_TIMEOUT_MILLIS): Pair<String, MouseAction>? =
         playerInputs.poll(timeoutMillis, TimeUnit.MILLISECONDS)
 
-    /** Closes every channel and harness, then shuts the server down and frees the common ports. */
+    /** Closes every harness, then shuts the server down and frees the common port. */
     override fun close() {
-        channels.forEach(FakePlayerChannel::close)
         harnesses.forEach(FakeClientHarness::close)
         server?.shutDown()
         server = null

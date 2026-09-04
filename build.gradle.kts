@@ -18,7 +18,7 @@ repositories {
 
 dependencies {
     // Spartan Laboratories Tools
-    api("io.github.spartanlaboratories:WebTools:2.0.0b")
+    api("io.github.spartanlaboratories:WebTools:2.0.0c")
     // Direct dependency for the Color class; WebTools already brings the same 2.0.1.
     api("io.github.spartanlaboratories:GeneralTools:2.0.1")
 
@@ -90,7 +90,7 @@ mavenPublishing {
     signAllPublications()
     // Build the Maven Central javadoc jar from Dokka output instead of an empty placeholder.
     configure(JavaLibrary(javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"), sourcesJar = true))
-    coordinates("io.github.spartanlabsgaming", "GameTools", "2.0.0")
+    coordinates("io.github.spartanlabsgaming", "GameTools", "3.0.0")
 
     pom {
         name.set("Game Tools")
