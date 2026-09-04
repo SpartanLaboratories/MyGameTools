@@ -6,11 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow the project's `Major.Feature.MinorChange` scheme (see
 [`.aiassistant/rules/CLAUDE.md`](.aiassistant/rules/CLAUDE.md) §6); a trailing letter marks a
 bug-fix release. Releases are tagged `vX.Y.Z` and published to
-[Maven Central](https://central.sonatype.com/artifact/io.github.spartanlaboratories/GameTools).
+[Maven Central](https://central.sonatype.com/artifact/io.github.spartanlabsgaming/GameTools).
 
 ## [Unreleased]
 
-_Nothing yet._
+### Changed
+- **BREAKING — Maven Central coordinates.** The library is now published under
+  `io.github.spartanlabsgaming:GameTools` (matching the SpartanLabsGaming GitHub
+  organization and its verified Maven Central namespace) instead of
+  `io.github.spartanlaboratories:GameTools`. Artifact contents and the `2.0.0`
+  version are unchanged; consumers must update their dependency coordinates. The
+  old coordinates receive no further releases. `WebTools` and `GeneralTools`
+  continue to resolve from `io.github.spartanlaboratories`.
 
 ## [2.0.0] — 2026-09-04
 
