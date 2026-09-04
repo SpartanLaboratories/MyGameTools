@@ -18,7 +18,7 @@ import kotlin.test.assertTrue
  *
  * The cap can only ever be enforced after the fact: `MultiConnectionUDPServer` registers the
  * connection and answers the handshake before it consults [GameServer], so an over-cap player
- * still receives a `TXRXON` reply and is dropped immediately afterwards. These tests assert on
+ * still receives a `REGISTERED` reply and is dropped immediately afterwards. These tests assert on
  * the roster rather than on the reply for exactly that reason.
  */
 class GameServerCapacityTest {

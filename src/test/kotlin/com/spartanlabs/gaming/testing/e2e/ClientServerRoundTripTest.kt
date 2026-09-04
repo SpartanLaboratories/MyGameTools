@@ -14,7 +14,6 @@ import com.spartanlabs.gaming.networking.GameServer
 import com.spartanlabs.gaming.networking.MouseAction
 import com.spartanlabs.gaming.networking.MouseActionType
 import com.spartanlabs.gaming.testing.integration.networking.FakeClientHarness
-import com.spartanlabs.gaming.testing.integration.networking.FakePlayerChannel
 //endregion
 
 //region 2. Intended Function
@@ -72,20 +71,17 @@ class ClientServerRoundTripTest {
     )
 
     private val harness = FakeClientHarness()
-    private var channel: FakePlayerChannel? = null
 
     @AfterTest
     fun tearDown() {
-        channel?.close()
         harness.close()
         server.shutDown()
     }
 
-    /** Handshakes a player, waits for the server to admit it, and opens its dedicated channel. */
-    private fun connect(name: String): FakePlayerChannel {
-        val ports = harness.handshake(name).getOrThrow()
+    /** Handshakes a player and waits for the server to admit it. */
+    private fun connect(name: String) {
+        harness.handshake(name).getOrThrow()
         assertTrue(await { server.playerCount == 1 }, "the handshaken player was never admitted")
-        return FakePlayerChannel(ports).also { channel = it }
     }
 
     /** Ticks the world once and broadcasts its visible objects, the way an external game loop would. */
@@ -94,8 +90,8 @@ class ClientServerRoundTripTest {
         server.broadcast(world.gameObjects.filterIsInstance<VisibleObject>()).getOrThrow()
     }
 
-    /** Reads one `STATE` datagram off [channel] and decodes its world-state payload. */
-    private fun FakePlayerChannel.receiveWorldState(): List<DrawableSnapshot> {
+    /** Reads one `STATE` datagram off [harness] and decodes its world-state payload. */
+    private fun FakeClientHarness.receiveWorldState(): List<DrawableSnapshot> {
         val message = receive().getOrThrow()
         val prefix = "${GameServer.STATE_VERB} "
         assertTrue(message.startsWith(prefix), "expected a STATE broadcast but got: $message")
@@ -113,9 +109,9 @@ class ClientServerRoundTripTest {
 
     @Test
     fun `a mouse input travels the full stack into the simulation and back out as world state`() {
-        val channel = connect("hero")
+        connect("hero")
 
-        channel.send(GameServer.inputMessage(MouseAction(MouseActionType.MOVE, button = -1, x = 100.0, y = 0.0)))
+        harness.send(GameServer.inputMessage(MouseAction(MouseActionType.MOVE, button = -1, x = 100.0, y = 0.0)))
             .getOrThrow()
 
         assertTrue(await { lastInput != null }, "the input never reached the server's onPlayerInput")
@@ -123,7 +119,7 @@ class ClientServerRoundTripTest {
 
         simulateAndBroadcastFrame()
 
-        val snapshot = assertIs<ActorSnapshot>(channel.receiveWorldState().single())
+        val snapshot = assertIs<ActorSnapshot>(harness.receiveWorldState().single())
         // one tick at speed 10 from (0,0) towards (100,0)
         assertEquals(10.0, snapshot.visibleObject.gameObject.location.x, absoluteTolerance = 1e-9)
         assertEquals(0.0, snapshot.visibleObject.gameObject.location.y, absoluteTolerance = 1e-9)
@@ -132,13 +128,13 @@ class ClientServerRoundTripTest {
 
     @Test
     fun `a hidden object never reaches the client through the full pipe`() {
-        val channel = connect("hero")
+        connect("hero")
         world.add(VisibleObject(texture = "hud.png").apply { visible = false })
         world.add(VisibleObject(texture = "wall.png"))
 
         simulateAndBroadcastFrame()
 
-        val state = channel.receiveWorldState()
+        val state = harness.receiveWorldState()
         val textures = state.filterIsInstance<VisibleObjectSnapshot>().map { it.texture }
         assertEquals(2, state.size, "only the hero and the wall are visible")
         assertTrue("wall.png" in textures, "the visible wall should be broadcast")
@@ -147,16 +143,16 @@ class ClientServerRoundTripTest {
 
     @Test
     fun `the simulation runs to completion over many frames and the final broadcast shows the hero arrived`() {
-        val channel = connect("hero")
+        connect("hero")
 
-        channel.send(GameServer.inputMessage(MouseAction(MouseActionType.PRESS, button = 0, x = 35.0, y = 0.0)))
+        harness.send(GameServer.inputMessage(MouseAction(MouseActionType.PRESS, button = 0, x = 35.0, y = 0.0)))
             .getOrThrow()
         assertTrue(await { hero.destination.x == 35.0 }, "the input never reached the simulation")
 
         lateinit var finalState: List<DrawableSnapshot>
         repeat(10) {
             simulateAndBroadcastFrame()
-            finalState = channel.receiveWorldState()
+            finalState = harness.receiveWorldState()
         }
 
         val snapshot = assertIs<ActorSnapshot>(finalState.single())
@@ -166,16 +162,16 @@ class ClientServerRoundTripTest {
 
     @Test
     fun `a malformed INPUT frame is dropped without breaking the connection or the frames after it`() {
-        val channel = connect("hero")
+        connect("hero")
 
-        channel.send("${GameServer.INPUT_VERB} {this is not json}").getOrThrow()
-        channel.send("chat hello").getOrThrow()
+        harness.send("${GameServer.INPUT_VERB} {this is not json}").getOrThrow()
+        harness.send("chat hello").getOrThrow()
 
         assertTrue(await { lastMessage == "chat hello" }, "a normal message sent after a bad INPUT was not delivered")
         assertEquals(null, lastInput, "a malformed INPUT must not reach onPlayerInput")
         assertEquals(1, server.playerCount, "the player should still be connected after a bad frame")
 
-        channel.send(GameServer.inputMessage(MouseAction(MouseActionType.MOVE, button = -1, x = 5.0, y = 6.0)))
+        harness.send(GameServer.inputMessage(MouseAction(MouseActionType.MOVE, button = -1, x = 5.0, y = 6.0)))
             .getOrThrow()
         assertTrue(await { lastInput != null }, "a valid INPUT after a malformed one was not processed")
     }
