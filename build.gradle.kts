@@ -18,11 +18,8 @@ repositories {
 
 dependencies {
     // Spartan Laboratories Tools
-    // Drop WebTools' bundled GeneralTools so the explicit 2.0.1 below is the only one on the path.
-    api("io.github.spartanlaboratories:WebTools:2.0.0") {
-        exclude(group = "io.github.spartanlaboratories", module = "GeneralTools")
-    }
-    // Even though its included in webtools, the newest version (2.0.1) is needed for the Color class
+    api("io.github.spartanlaboratories:WebTools:2.0.0b")
+    // Direct dependency for the Color class; WebTools already brings the same 2.0.1.
     api("io.github.spartanlaboratories:GeneralTools:2.0.1")
 
     // Serialization
@@ -40,7 +37,7 @@ dependencies {
     testImplementation("ch.qos.logback:logback-classic:1.5.18")
 }
 
-// A GameServer binds the fixed common UDP ports, so no two test tasks that start one may run
+// A GameServer binds the fixed common UDP port, so no two test tasks that start one may run
 // at the same time (Gradle runs independent tasks in parallel). Every port-binding test task
 // declares this single-permit service so Gradle serializes them.
 abstract class GameServerPortsLock : BuildService<BuildServiceParameters.None>

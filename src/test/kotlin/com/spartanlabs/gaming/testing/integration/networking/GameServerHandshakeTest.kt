@@ -52,26 +52,41 @@ class GameServerHandshakeTest {
     @Test
     fun `each player is handed its own port pair`() {
         fixture.startServer(maxConnections = 4)
-        val client = fixture.client()
 
-        val first = client.handshake("alice").getOrThrow()
-        val second = client.handshake("bob").getOrThrow()
+        val first = fixture.client().handshake("alice").getOrThrow()
+        val second = fixture.client().handshake("bob").getOrThrow()
 
+        assertEquals(9996, first.serverReceivePort, "the first registration's receive port")
+        assertEquals(9994, second.serverReceivePort, "the second registration's receive port")
         assertNotEquals(first.serverReceivePort, second.serverReceivePort, "ports must not be reused")
     }
 
     @Test
-    fun `reconnecting under the same name does not count twice`() {
+    fun `reconnecting under the same name from a new origin does not count twice`() {
         val server = fixture.startServer(maxConnections = 4)
-        val client = fixture.client()
 
-        assertTrue(client.handshake("alice").isSuccess)
+        assertTrue(fixture.client().handshake("alice").isSuccess)
         assertTrue(fixture.awaitPlayers(expected = 1))
-        assertTrue(client.handshake("alice").isSuccess, "a returning player should be let back in")
+        assertTrue(fixture.client().handshake("alice").isSuccess, "a returning player should be let back in")
         fixture.settle()
 
         assertEquals(1, server.playerCount, "a reconnect replaces the old connection")
         assertEquals(setOf("alice"), server.playerNames)
+    }
+
+    @Test
+    fun `a retransmitted Iam from the same origin does not register a second player`() {
+        val server = fixture.startServer(maxConnections = 4)
+        val client = fixture.client()
+
+        val first = client.handshake("alice").getOrThrow()
+        assertTrue(fixture.awaitPlayers(expected = 1))
+        val second = client.handshake("alice").getOrThrow()
+        fixture.settle()
+
+        assertEquals(1, server.playerCount, "a retransmit registers nothing new")
+        assertEquals(setOf("alice"), server.playerNames)
+        assertEquals(first, second, "the server repeats the first reply")
     }
 
     @Test

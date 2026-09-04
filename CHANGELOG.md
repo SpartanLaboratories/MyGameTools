@@ -10,7 +10,17 @@ bug-fix release. Releases are tagged `vX.Y.Z` and published to
 
 ## [Unreleased]
 
-_Nothing yet._
+### Changed
+- **BREAKING — GameServer wire protocol (WebTools 2.0.0b).** Clients now send `Iam <name>`;
+  the old trailing `<address>` token is accepted but ignored. The server's handshake reply
+  is now a bare `TXRXON <sendPort> <receivePort>` (no leading address) sent back to the UDP
+  source of the `Iam` datagram instead of `<clientAddress>:9999`. A client must therefore
+  read the reply — and any common-channel broadcast — on the same socket it sent `Iam`
+  from. `COMMON_SEND_PORT` is gone. This makes the handshake work through NAT.
+
+### Dependencies
+- WebTools `2.0.0` → `2.0.0b`; dropped the now-redundant `GeneralTools` exclude
+  (WebTools 2.0.0b depends on `GeneralTools:2.0.1` directly).
 
 ## [1.9.0] — 2026-09-03
 

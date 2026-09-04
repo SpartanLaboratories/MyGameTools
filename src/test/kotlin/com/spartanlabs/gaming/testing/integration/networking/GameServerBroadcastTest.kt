@@ -15,6 +15,7 @@ import com.spartanlabs.gaming.networking.GameServer
 // 4.3 Testing
 import kotlin.test.AfterTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 //endregion
@@ -75,5 +76,23 @@ class GameServerBroadcastTest {
         val message = channel.receive().getOrThrow()
         assertTrue(message.contains("\"type\":\"alive\""), "expected an alive-tagged snapshot: $message")
         assertTrue(message.contains("\"faction\":\"red\""), "alive snapshots carry the faction: $message")
+    }
+
+    @Test
+    fun `two players can each open their own dedicated channel at once`() {
+        val server = fixture.startServer(maxConnections = 4)
+
+        val p1Ports = fixture.client().handshake("p1").getOrThrow()
+        val p2Ports = fixture.client().handshake("p2").getOrThrow()
+        assertTrue(fixture.awaitPlayers(expected = 2), "both players were never admitted")
+
+        val p1Channel = fixture.channel(p1Ports)
+        val p2Channel = fixture.channel(p2Ports)
+
+        assertTrue(server.push("p1", "for-p1").isSuccess)
+        assertTrue(server.push("p2", "for-p2").isSuccess)
+
+        assertEquals("for-p1", p1Channel.receive().getOrThrow(), "p1's channel gets only p1's message")
+        assertEquals("for-p2", p2Channel.receive().getOrThrow(), "p2's channel gets only p2's message")
     }
 }

@@ -134,7 +134,7 @@ classDiagram
 - A generic **point-region `Quadtree<N, E>`** used as the broad phase for collision and homing lookups — rebuilt once per frame by `World.tick()` so every object's own tick sees a consistent index.
 
 ### 🌐 Networking
-- `GameServer`, built on Spartan Laboratories' `WebTools` `MultiConnectionUDPServer`: handles the `Iam <name> <address>` handshake, allocates each client a dedicated send/receive port pair, decodes `INPUT` datagrams into structured `MouseAction` events, routes everything else to your own callback, and enforces a configurable max player count.
+- `GameServer`, built on Spartan Laboratories' `WebTools` `MultiConnectionUDPServer`: handles the `Iam <name>` handshake (NAT-traversable as of WebTools 2.0.0b), allocates each client a dedicated send/receive port pair, decodes `INPUT` datagrams into structured `MouseAction` events, routes everything else to your own callback, and enforces a configurable max player count.
 - `MouseAction` — a serializable, typed representation of mouse `MOVE` / `PRESS` / `RELEASE` events in window pixel coordinates.
 
 ### 🧮 Geometry Serialization
