@@ -10,6 +10,10 @@ bug-fix release. Releases are tagged `vX.Y.Z` and published to
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [2.0.0] — 2026-09-04
+
 ### Changed
 - **BREAKING — GameServer wire protocol (WebTools 2.0.0b).** Clients now send `Iam <name>`;
   the old trailing `<address>` token is accepted but ignored. The server's handshake reply
@@ -80,7 +84,8 @@ Pre-changelog release. First tagged release. See the [`v1.4.0`](https://github.c
 Pre-changelog release (untagged). Actor angle/`Result` rework, `MouseAction` input routing,
 `GameServer` implementation and networking tests.
 
-[Unreleased]: https://github.com/SpartanLaboratories/MyGameTools/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/SpartanLabsGaming/MyGameTools/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/SpartanLabsGaming/MyGameTools/compare/v1.9.0...v2.0.0
 [1.9.0]: https://github.com/SpartanLaboratories/MyGameTools/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/SpartanLaboratories/MyGameTools/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/SpartanLaboratories/MyGameTools/compare/v1.6.0...v1.7.0

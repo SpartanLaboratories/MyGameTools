@@ -78,7 +78,7 @@ dokka {
     dokkaSourceSets.main {
         sourceLink {
             localDirectory.set(file("src/main/kotlin"))
-            remoteUrl("https://github.com/SpartanLaboratories/MyGameTools/blob/master/src/main/kotlin")
+            remoteUrl("https://github.com/SpartanLabsGaming/MyGameTools/blob/master/src/main/kotlin")
             // "view source" links jump to the exact line
             remoteLineSuffix.set("#L")
         }
@@ -90,13 +90,13 @@ mavenPublishing {
     signAllPublications()
     // Build the Maven Central javadoc jar from Dokka output instead of an empty placeholder.
     configure(JavaLibrary(javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"), sourcesJar = true))
-    coordinates("io.github.spartanlaboratories", "GameTools", "1.9.0")
+    coordinates("io.github.spartanlaboratories", "GameTools", "2.0.0")
 
     pom {
         name.set("Game Tools")
         description.set("A set of generic game tools.")
         inceptionYear.set("2026")
-        url.set("https://github.com/SpartanLaboratories/MyGameTools")
+        url.set("https://github.com/SpartanLabsGaming/MyGameTools")
         licenses {
             license {
                 name.set("The Apache License, Version 2.0")
@@ -112,9 +112,9 @@ mavenPublishing {
             }
         }
         scm {
-            url.set("https://github.com/SpartanLaboratories/MyGameTools/")
-            connection.set("scm:git:git://github.com/SpartanLaboratories/MyGameTools.git")
-            developerConnection.set("scm:git:ssh://git@github.com/SpartanLaboratories/MyGameTools.git")
+            url.set("https://github.com/SpartanLabsGaming/MyGameTools/")
+            connection.set("scm:git:git://github.com/SpartanLabsGaming/MyGameTools.git")
+            developerConnection.set("scm:git:ssh://git@github.com/SpartanLabsGaming/MyGameTools.git")
         }
     }
 }
