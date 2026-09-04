@@ -10,6 +10,10 @@ bug-fix release. Releases are tagged `vX.Y.Z` and published to
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [3.0.0] — 2026-09-04
+
 ### Changed
 - **BREAKING — Maven Central coordinates.** The library is now published under
   `io.github.spartanlabsgaming:GameTools` (matching the SpartanLabsGaming GitHub
@@ -101,7 +105,8 @@ Pre-changelog release. First tagged release. See the [`v1.4.0`](https://github.c
 Pre-changelog release (untagged). Actor angle/`Result` rework, `MouseAction` input routing,
 `GameServer` implementation and networking tests.
 
-[Unreleased]: https://github.com/SpartanLabsGaming/MyGameTools/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/SpartanLabsGaming/MyGameTools/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/SpartanLabsGaming/MyGameTools/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/SpartanLabsGaming/MyGameTools/compare/v1.9.0...v2.0.0
 [1.9.0]: https://github.com/SpartanLaboratories/MyGameTools/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/SpartanLaboratories/MyGameTools/compare/v1.7.0...v1.8.0
