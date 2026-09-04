@@ -30,13 +30,17 @@ private val log: Logger = LoggerFactory.getLogger("GameServer")
  *
  * The base class does all of the socket work: it listens on
  * [MultiConnectionUDPServer.COMMON_LISTEN_PORT] for `Iam <name>` handshakes (a trailing
- * address token is accepted but ignored), allocates each client a dedicated port pair,
- * replies - from that same common socket, straight back to the datagram's source address and
- * port - with a bare `TXRXON <sendPort> <receivePort>` and then calls [onClientConnect]. This
- * class supplies the game-specific half of that contract:
+ * address token is accepted but ignored), replies - from that same common socket, straight back
+ * to the datagram's source address and port - with the bare token `REGISTERED`, and then calls
+ * [onClientConnect]. From then on every player's traffic - application data, `STATE` broadcasts,
+ * and the player's own `KA` keepalives - is multiplexed over that same shared socket; there is
+ * no per-player dedicated port pair. A player is expected to send a bare `KA` datagram on an
+ * idle interval (WebTools recommends ~20s) from the socket it handshook on, to keep its NAT
+ * mapping warm; the base class consumes `KA` silently and never routes it to [onPlayerMessage]
+ * or [onPlayerInput]. This class supplies the game-specific half of that contract:
  *
  * - it accepts at most [maxConnections] players and refuses the rest,
- * - it starts listening on every accepted player's dedicated connection and routes their
+ * - it starts listening on every accepted player's connection and routes their
  *   messages by verb: an `INPUT <json>` datagram is decoded into a [MouseAction] and handed
  *   to [onPlayerInput], and everything else is passed verbatim to [onPlayerMessage], each
  *   tagged with the player it came from,
@@ -80,12 +84,13 @@ class GameServer(
     /**
      * Accepts a freshly handshaken client as a player, unless the server is already full.
      *
-     * The base class has, by this point, already told the client which ports to use, so a
+     * The base class has, by this point, already told the client it is `REGISTERED`, so a
      * refusal cannot be a handshake rejection - the connection is terminated instead, which
-     * releases its ports and leaves the client with a port pair that never answers.
+     * unbinds its message handler; the refused client is left believing it is connected, but
+     * nothing on the server answers it again.
      *
      * A player that handshakes under a name that is already connected replaces it, and the
-     * stale connection is terminated so its ports are not leaked.
+     * stale connection is terminated so it stops holding a message handler.
      *
      * @param connection the connection the base class just registered
      */
@@ -123,7 +128,7 @@ class GameServer(
 
     /**
      * Registers an admitted [connection] as a player and starts listening to it, terminating
-     * the stale connection of a player who is reconnecting so that its ports are not leaked.
+     * the stale connection of a player who is reconnecting so it stops holding a message handler.
      *
      * @param connection the connection [admit] accepted
      * @return [Result.success] once the player is being listened to, or the failure that prevented it
@@ -214,10 +219,15 @@ class GameServer(
             .andThen { json -> pushToAllPlayers("$STATE_VERB $json") }
 
     /**
-     * Sends a message to every connected player on their own dedicated connection.
+     * Sends a message to every player this [GameServer] currently admits, over WebTools' shared
+     * common socket - each send addresses the player's own post-NAT [Connection.peer].
      *
-     * This is not the inherited [pushToAll], which sends to each client's handshake origin
-     * over the common socket; this uses the private port pair each player was handed.
+     * This is deliberately narrower than the inherited [pushToAll]: [pushToAll] reaches every
+     * connection WebTools has ever registered for this server instance, including a handshake
+     * this class refused for being over [maxConnections] and the stale connection of a player who
+     * has since reconnected from a new origin - WebTools never prunes a registration once a
+     * handshake completes (only [stop] tears every one of them down at once). Prefer this method
+     * over [pushToAll] whenever "every player" is meant to mean "every player I currently track".
      *
      * @param message the text to send to all players
      * @return [Result.success] if the message reached every player, or the first failure encountered
@@ -232,7 +242,8 @@ class GameServer(
     }
 
     /**
-     * Sends a message to a single player on their dedicated connection.
+     * Sends a message to a single player, over WebTools' shared common socket, addressed to
+     * their own [Connection.peer].
      * @param playerName the name the player handshook with
      * @param message the text to send
      * @return [Result.success] if the datagram was sent, or [Result.failure] if no such player
@@ -243,10 +254,10 @@ class GameServer(
             ?: Result.failure(NoSuchElementException("No connected player named '$playerName'"))
 
     /**
-     * Disconnects a single player, releasing their dedicated ports. They are free to handshake
-     * again afterwards.
+     * Disconnects a single player, unbinding their message handler on WebTools' shared socket.
+     * They are free to handshake again afterwards.
      * @param playerName the name the player handshook with
-     * @return [Result.success] if their connection was released, or [Result.failure] if no such
+     * @return [Result.success] if their handler was unbound, or [Result.failure] if no such
      * player is connected or the release failed
      */
     fun disconnect(playerName: String): Result<Unit> =
@@ -257,7 +268,7 @@ class GameServer(
 
     /**
      * Shuts the server down, disconnecting every player and releasing the common handshake
-     * ports. Once called, this instance should be discarded - there is no restart.
+     * port. Once called, this instance should be discarded - there is no restart.
      *
      * The inherited [stop] does the actual teardown; this wrapper exists to also forget the
      * players, so it should be preferred over calling [stop] directly.
